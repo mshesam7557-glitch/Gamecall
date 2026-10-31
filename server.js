@@ -12,15 +12,57 @@ const pool = process.env.DATABASE_URL ? new (require('pg').Pool)({ connectionStr
 async function init() {
   if (!pool) return console.warn('DATABASE_URL not set: accounts are stored in a temporary file');
   await pool.query('create table if not exists users(key text primary key, name text not null, hash text not null)');
-  (await pool.query('select key,name,hash from users')).rows.forEach(r => users[r.key] = { name: r.name, hash: r.hash });
+  await pool.query('alter table users add column if not exists avatar text');
+  (await pool.query('select key,name,hash,avatar from users')).rows.forEach(r => users[r.key] = { name: r.name, hash: r.hash, avatar: r.avatar || '' });
   console.log('loaded ' + Object.keys(users).length + ' users from database');
 }
 
-app.use(express.json());
+app.use(express.json({ limit: '400kb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 const okName = u => typeof u === 'string' && /^[\w\u0600-\u06FF.\-]{3,20}$/.test(u);
 const okPass = p => typeof p === 'string' && p.length >= 4 && p.length <= 64;
+
+const authReq = (req, res, next) => {
+  try {
+    const { u } = jwt.verify((req.headers.authorization || '').replace('Bearer ', ''), SECRET);
+    const rec = users[u.toLowerCase()]; if (!rec) throw 0;
+    req.key = u.toLowerCase(); req.rec = rec; next();
+  } catch { res.status(401).json({ error: 'auth' }); }
+};
+app.get('/api/me', authReq, (req, res) => res.json({ username: req.rec.name, avatar: req.rec.avatar || '' }));
+
+app.post('/api/profile', authReq, async (req, res) => {
+  const { currentPassword, newUsername, newPassword, avatar } = req.body || {};
+  const rec = req.rec, key = req.key;
+  let name = rec.name, hash = rec.hash, av = rec.avatar || '';
+  const wantsName = typeof newUsername === 'string' && newUsername && newUsername !== rec.name;
+  if (wantsName || newPassword) {
+    if (!bcrypt.compareSync(String(currentPassword || ''), rec.hash)) return res.status(401).json({ error: 'رمز فعلی اشتباه است.' });
+  }
+  if (wantsName) {
+    if (!okName(newUsername)) return res.status(400).json({ error: 'نام کاربری باید ۳ تا ۲۰ حرف (فارسی، انگلیسی، عدد، _ . -) باشد.' });
+    if (newUsername.toLowerCase() !== key && users[newUsername.toLowerCase()]) return res.status(409).json({ error: 'این نام کاربری قبلاً گرفته شده.' });
+    name = newUsername;
+  }
+  if (newPassword) {
+    if (!okPass(newPassword)) return res.status(400).json({ error: 'رمز جدید باید حداقل ۴ کاراکتر باشد.' });
+    hash = bcrypt.hashSync(newPassword, 10);
+  }
+  if (typeof avatar === 'string') {
+    if (avatar === '') av = '';
+    else if (avatar.length < 200000 && /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(avatar)) av = avatar;
+    else return res.status(400).json({ error: 'عکس نامعتبر است.' });
+  }
+  const nk = name.toLowerCase();
+  try {
+    if (pool) await pool.query('update users set key=$1,name=$2,hash=$3,avatar=$4 where key=$5', [nk, name, hash, av, key]);
+    if (nk !== key) delete users[key];
+    users[nk] = { name, hash, avatar: av }; if (!pool) save();
+    if (name !== rec.name) { rooms.forEach(r => { if (r.owner === rec.name) r.owner = name; }); push(); }
+    res.json({ token: jwt.sign({ u: name }, SECRET, { expiresIn: '30d' }), username: name, avatar: av });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'خطای سرور، دوباره تلاش کن.' }); }
+});
 
 app.get('/health', (_, res) => res.send('ok'));
 
@@ -94,13 +136,15 @@ io.on('connection', s => {
     if (r.hash && !bcrypt.compareSync(String(password || ''), r.hash)) return ack({ error: 'رمز روم اشتباه است.' });
     if (r.members.size >= MAX_MEMBERS && !r.members.has(s.id)) return ack({ error: 'ظرفیت روم پر است.' });
     if (s.roomId) leave();
-    const peers = [...r.members].map(([sid, name]) => ({ id: sid, name }));
-    r.members.set(s.id, s.user); s.roomId = id; s.join(id);
-    s.to(id).emit('peer-joined', { id: s.id, name: s.user });
+    const av = n => (users[n.toLowerCase()] || {}).avatar || '';
+    const peers = [...r.members].map(([sid, name]) => ({ id: sid, name, avatar: av(name), mic: (io.sockets.sockets.get(sid) || {}).mic !== false }));
+    r.members.set(s.id, s.user); s.roomId = id; s.mic = true; s.join(id);
+    s.to(id).emit('peer-joined', { id: s.id, name: s.user, avatar: av(s.user), mic: true });
     push(); ack({ ok: true, name: r.name, owner: r.owner, peers });
   });
 
   s.on('signal', ({ to, data }) => io.to(to).emit('signal', { from: s.id, data }));
+  s.on('state', d => { s.mic = !!(d && d.mic); if (s.roomId) s.to(s.roomId).emit('state', { id: s.id, mic: s.mic }); });
   s.on('leave', leave);
 
   s.on('delete', (id, ack) => {
