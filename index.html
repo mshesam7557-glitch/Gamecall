@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>گیم‌کال</title>
+<style>
+:root{--bg:#15122a;--panel:#201c3d;--panel2:#2a2551;--line:#3a3466;--tx:#ecebff;--mut:#9d98c8;--ac:#7c6cff;--ac2:#a99dff;--ok:#3ddc97;--bad:#ff5f7e}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%}
+body{background:radial-gradient(1000px 500px at 85% -10%,#2d2670 0,transparent 60%),var(--bg);color:var(--tx);font-family:Vazirmatn,Tahoma,"Segoe UI",sans-serif;font-size:15px}
+[hidden]{display:none!important}
+button,input{font:inherit;color:inherit}
+input{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px 14px;outline:none}
+input:focus,button:focus-visible{border-color:var(--ac);box-shadow:0 0 0 3px #7c6cff44}
+button{cursor:pointer;border:0;border-radius:10px;padding:11px 18px;background:var(--ac);font-weight:700;transition:filter .15s}
+button:hover{filter:brightness(1.12)}
+button.ghost{background:var(--panel2)}
+button.danger{background:var(--bad);color:#fff}
+.screen{min-height:100%;padding:20px}
+.center{display:grid;place-items:center}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:26px;width:100%;max-width:400px}
+.stack{display:grid;gap:12px}
+h1{font-size:30px;letter-spacing:-.5px}
+h2{font-size:17px;margin-bottom:14px}
+.mut{color:var(--mut);font-size:13px}
+.msg{min-height:20px;font-size:13px}
+.msg.err{color:var(--bad)}.msg.ok{color:var(--ok)}
+a.lnk{color:var(--ac2);cursor:pointer;font-size:13px;text-align:center}
+.wrap{max-width:920px;margin:0 auto;display:grid;gap:18px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.row{display:grid;grid-template-columns:1fr 1fr auto;gap:10px}
+.rooms{display:grid;gap:10px;margin-top:14px}
+.room{display:flex;align-items:center;justify-content:space-between;background:var(--panel2);border-radius:14px;padding:14px 16px;gap:10px}
+.room b{font-size:16px}
+.room .meta{display:flex;gap:14px;align-items:center;color:var(--mut);font-size:13px}
+.pill{display:inline-flex;gap:6px;align-items:center}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--ok)}
+.empty{text-align:center;color:var(--mut);padding:26px 0}
+#room{display:flex;flex-direction:column;height:100vh;padding:14px;gap:12px}
+.rbar{display:flex;justify-content:space-between;align-items:center}
+.grid{flex:1;display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));grid-auto-rows:minmax(0,1fr);min-height:0}
+.tile{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:16px;overflow:hidden;display:grid;place-items:center;min-height:0}
+.tile video{width:100%;height:100%;object-fit:contain;background:#0d0b1d}
+.tile.audio video{opacity:0;position:absolute;inset:0}
+.tile .av{width:84px;height:84px;border-radius:50%;background:var(--panel2);display:grid;place-items:center;font-size:34px;font-weight:700;color:var(--ac2)}
+.tile .nm{position:absolute;bottom:10px;right:10px;background:#000a;border-radius:8px;padding:4px 10px;font-size:13px}
+.tile.talk{border-color:var(--ok);box-shadow:0 0 0 2px #3ddc9755}
+.ctl{display:flex;justify-content:center;gap:10px;flex-wrap:wrap}
+.ctl button{background:var(--panel2);min-width:110px}
+.ctl button.on{background:var(--ac)}
+.ctl button.off{background:var(--bad)}
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--panel2);border:1px solid var(--line);padding:10px 18px;border-radius:10px;z-index:9}
+</style>
+</head>
+<body>
+
+<div id="auth" class="screen center" hidden>
+  <div class="card stack">
+    <h1>گیم‌کال</h1>
+    <p class="mut" id="sub">برای ورود، نام کاربری و رمز عبورت را وارد کن.</p>
+    <input id="u" placeholder="نام کاربری" autocomplete="username">
+    <input id="p" type="password" placeholder="رمز عبور" autocomplete="current-password">
+    <div id="am" class="msg"></div>
+    <button id="go">ورود</button>
+    <a class="lnk" id="sw">حساب ندارم</a>
+  </div>
+</div>
+
+<div id="lobby" class="screen" hidden>
+  <div class="wrap">
+    <div class="top"><h1>گیم‌کال</h1><div class="pill mut"><span id="me"></span><button class="ghost" id="out">خروج</button></div></div>
+    <div class="card" style="max-width:none">
+      <h2>ساخت روم جدید</h2>
+      <div class="row">
+        <input id="rn" placeholder="نام روم" maxlength="30">
+        <input id="rp" type="password" placeholder="رمز (اختیاری)">
+        <button id="mk">ساخت روم</button>
+      </div>
+    </div>
+    <div class="card" style="max-width:none">
+      <h2>روم‌ها</h2>
+      <input id="q" placeholder="جستجو با نام روم">
+      <div class="rooms" id="list"></div>
+    </div>
+  </div>
+</div>
+
+<div id="room" hidden>
+  <div class="rbar">
+    <div><b id="rt"></b> <span class="mut" id="rc"></span></div>
+    <button class="danger" id="del" hidden>حذف روم</button>
+  </div>
+  <div class="grid" id="grid"></div>
+  <div class="ctl">
+    <button id="bm" class="on">میکروفون</button>
+    <button id="bc">دوربین</button>
+    <button id="bs">اشتراک صفحه</button>
+    <button id="bl" class="danger">خروج از روم</button>
+  </div>
+</div>
+<div id="toast" hidden></div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const $ = s => document.querySelector(s);
+let token = localStorage.gt, me = localStorage.gu, socket, mode = 'login', rooms = [], cur = null,
+    peers = {}, local = new MediaStream(), screen = null, ICE = [], tiles = {}, audioCtxs = [];
+
+const show = n => ['auth','lobby','room'].forEach(x => $('#'+x).hidden = x !== n);
+const toast = t => { const e = $('#toast'); e.textContent = t; e.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => e.hidden = true, 3200); };
+const emit = (ev, d) => new Promise(r => socket.emit(ev, d, r));
+
+/* ---------- Auth ---------- */
+function setMode(m, keepMsg) {
+  mode = m;
+  $('#go').textContent = m === 'login' ? 'ورود' : 'ساخت حساب';
+  $('#sw').textContent = m === 'login' ? 'حساب ندارم' : 'حساب دارم، ورود';
+  $('#sub').textContent = m === 'login' ? 'برای ورود، نام کاربری و رمز عبورت را وارد کن.' : 'یک نام کاربری و رمز انتخاب کن. به ایمیل یا شماره‌ای نیاز نیست.';
+  $('#p').autocomplete = m === 'login' ? 'current-password' : 'new-password';
+  if (!keepMsg) $('#am').textContent = '';
+}
+$('#sw').onclick = () => setMode(mode === 'login' ? 'register' : 'login');
+const msg = (t, ok) => { const e = $('#am'); e.textContent = t; e.className = 'msg ' + (ok ? 'ok' : 'err'); };
+async function submit() {
+  const username = $('#u').value.trim(), password = $('#p').value;
+  const r = await fetch('/api/' + mode, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, password }) });
+  const d = await r.json();
+  if (!r.ok) return msg(d.error);
+  if (mode === 'register') { setMode('login', true); $('#p').value = ''; return msg('ساخت حساب با موفقیت انجام شد. حالا وارد شو.', true); }
+  token = localStorage.gt = d.token; me = localStorage.gu = d.username; start();
+}
+$('#go').onclick = submit;
+$('#p').onkeydown = e => e.key === 'Enter' && submit();
+$('#out').onclick = () => { localStorage.clear(); location.reload(); };
+
+/* ---------- Lobby ---------- */
+async function start() {
+  try { ICE = await (await fetch('/api/ice')).json(); } catch { ICE = [{ urls: 'stun:stun.l.google.com:19302' }]; }
+  socket = io({ auth: { token } });
+  socket.on('connect_error', e => { if (e.message === 'auth') { localStorage.clear(); location.reload(); } });
+  socket.on('connect', async () => { rooms = await emit('rooms'); draw(); });
+  socket.on('rooms', l => { rooms = l; draw(); });
+  socket.on('peer-joined', ({ id, name }) => getPeer(id, name));
+  socket.on('peer-left', closePeer);
+  socket.on('signal', onSignal);
+  socket.on('room-deleted', () => { toast('صاحب روم، روم را حذف کرد.'); leaveLocal(); });
+  $('#me').textContent = me; show('lobby');
+}
+function draw() {
+  const q = $('#q').value.trim().toLowerCase();
+  const l = rooms.filter(r => r.name.toLowerCase().includes(q));
+  const box = $('#list'); box.innerHTML = '';
+  if (!l.length) { box.innerHTML = '<div class="empty">' + (rooms.length ? 'رومی با این نام پیدا نشد.' : 'هنوز رومی ساخته نشده. اولین روم را بساز.') + '</div>'; return; }
+  l.forEach(r => {
+    const d = document.createElement('div'); d.className = 'room';
+    const b = document.createElement('b'); b.textContent = (r.locked ? '🔒 ' : '') + r.name;
+    const m = document.createElement('div'); m.className = 'meta';
+    m.innerHTML = '<span class="pill"><span class="dot"></span><span></span></span><span></span>';
+    m.children[0].children[1].textContent = r.count + ' نفر'; m.children[1].textContent = 'سازنده: ' + r.owner;
+    const j = document.createElement('button'); j.textContent = 'ورود';
+    j.onclick = () => join(r);
+    const left = document.createElement('div'); left.append(b); d.append(left, m, j); box.append(d);
+  });
+}
+$('#q').oninput = draw;
+$('#mk').onclick = async () => {
+  const name = $('#rn').value, password = $('#rp').value;
+  const r = await emit('create', { name, password });
+  if (r.error) return toast(r.error);
+  $('#rn').value = $('#rp').value = '';
+  join({ id: r.id, name, owner: me }, password);
+};
+
+/* ---------- Room ---------- */
+async function join(r, pw) {
+  if (r.locked && pw === undefined) { pw = prompt('رمز روم را وارد کن'); if (pw === null) return; }
+  if (!local.getAudioTracks().length) {
+    try {
+      const a = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+      a.getAudioTracks().forEach(t => local.addTrack(t));
+    } catch { toast('به میکروفون دسترسی نداری؛ فقط می‌توانی گوش بدهی.'); }
+  }
+  const res = await emit('join', { id: r.id, password: pw });
+  if (res.error) return toast(res.error);
+  cur = { id: r.id, owner: res.owner };
+  $('#rt').textContent = res.name; $('#del').hidden = res.owner !== me;
+  show('room'); $('#grid').innerHTML = ''; tiles = {};
+  addTile('me-cam', local, me + ' (تو)', true);
+  res.peers.forEach(p => getPeer(p.id, p.name));
+  syncUI();
+}
+function syncUI() {
+  const mic = local.getAudioTracks()[0], cam = local.getVideoTracks()[0];
+  $('#bm').textContent = mic && mic.enabled ? 'میکروفون روشن' : 'میکروفون خاموش';
+  $('#bm').className = mic && mic.enabled ? 'on' : 'off';
+  $('#bc').className = cam ? 'on' : ''; $('#bc').textContent = cam ? 'خاموش‌کردن دوربین' : 'روشن‌کردن دوربین';
+  $('#bs').className = screen ? 'on' : ''; $('#bs').textContent = screen ? 'توقف اشتراک' : 'اشتراک صفحه';
+  $('#rc').textContent = (Object.keys(peers).length + 1) + ' نفر در روم';
+  for (const k in tiles) updTile(k);
+}
+function addTile(key, stream, label, mute) {
+  if (tiles[key]) { tiles[key].v.srcObject = stream; return; }
+  const el = document.createElement('div'); el.className = 'tile';
+  const av = document.createElement('div'); av.className = 'av'; av.textContent = [...label][0];
+  const v = document.createElement('video'); v.autoplay = true; v.playsInline = true; v.muted = !!mute; v.srcObject = stream;
+  const nm = document.createElement('div'); nm.className = 'nm'; nm.textContent = label;
+  el.append(av, v, nm); $('#grid').append(el);
+  tiles[key] = { el, v, stream, av };
+  stream.onremovetrack = stream.onaddtrack = () => updTile(key);
+  v.onplaying = () => updTile(key);
+  talkDetect(key, stream);
+  updTile(key);
+}
+function updTile(key) {
+  const t = tiles[key]; if (!t) return;
+  const hasVid = t.stream.getVideoTracks().some(x => x.readyState === 'live' && !x.muted);
+  t.el.classList.toggle('audio', !hasVid); t.av.hidden = hasVid;
+}
+function talkDetect(key, stream) {
+  if (!stream.getAudioTracks().length) return;
+  try {
+    const ctx = new AudioContext(), an = ctx.createAnalyser(); an.fftSize = 256;
+    ctx.createMediaStreamSource(new MediaStream(stream.getAudioTracks())).connect(an);
+    const buf = new Uint8Array(an.frequencyBinCount); audioCtxs.push(ctx);
+    const iv = setInterval(() => {
+      const t = tiles[key]; if (!t) return clearInterval(iv);
+      an.getByteFrequencyData(buf); t.el.classList.toggle('talk', buf.reduce((a, b) => a + b, 0) / buf.length > 14);
+    }, 200);
+  } catch {}
+}
+function dropTile(key) { const t = tiles[key]; if (t) { t.el.remove(); delete tiles[key]; } }
+
+/* ---------- WebRTC (perfect negotiation) ---------- */
+function getPeer(id, name) {
+  if (peers[id]) return peers[id];
+  const pc = new RTCPeerConnection({ iceServers: ICE });
+  const p = peers[id] = { pc, name, making: false, ignore: false, polite: socket.id < id, keys: new Set() };
+  local.getTracks().forEach(t => pc.addTrack(t, local));
+  if (screen) screen.getTracks().forEach(t => pc.addTrack(t, screen));
+  pc.onicecandidate = e => e.candidate && socket.emit('signal', { to: id, data: { candidate: e.candidate } });
+  pc.onnegotiationneeded = async () => {
+    try { p.making = true; await pc.setLocalDescription(); socket.emit('signal', { to: id, data: { description: pc.localDescription } }); }
+    catch (e) { console.error(e); } finally { p.making = false; }
+  };
+  pc.ontrack = e => {
+    const s = e.streams[0]; if (!s) return;
+    const key = id + ':' + s.id; p.keys.add(key);
+    addTile(key, s, name + (p.keys.size > 1 && s.getVideoTracks().length && s.getAudioTracks().length === 0 ? ' (صفحه)' : ''), false);
+    s.onremovetrack = () => { if (!s.getTracks().length) { dropTile(key); p.keys.delete(key); } else updTile(key); };
+    e.track.onmute = () => updTile(key); e.track.onunmute = () => updTile(key);
+  };
+  pc.oniceconnectionstatechange = () => { if (pc.iceConnectionState === 'failed') pc.restartIce(); };
+  syncUI(); return p;
+}
+async function onSignal({ from, data }) {
+  const p = peers[from] || (cur && getPeer(from, '...')); if (!p) return;
+  const pc = p.pc;
+  try {
+    if (data.description) {
+      const d = data.description;
+      const collision = d.type === 'offer' && (p.making || pc.signalingState !== 'stable');
+      p.ignore = !p.polite && collision; if (p.ignore) return;
+      await pc.setRemoteDescription(d);
+      if (d.type === 'offer') { await pc.setLocalDescription(); socket.emit('signal', { to: from, data: { description: pc.localDescription } }); }
+    } else if (data.candidate) {
+      try { await pc.addIceCandidate(data.candidate); } catch (e) { if (!p.ignore) throw e; }
+    }
+  } catch (e) { console.error(e); }
+}
+function closePeer(id) {
+  const p = peers[id]; if (!p) return;
+  p.pc.close(); p.keys.forEach(dropTile); delete peers[id]; syncUI();
+}
+function addToAll(track, stream) { Object.values(peers).forEach(p => p.pc.addTrack(track, stream)); }
+function removeFromAll(track) { Object.values(peers).forEach(p => { const s = p.pc.getSenders().find(x => x.track === track); if (s) p.pc.removeTrack(s); }); }
+
+/* ---------- Controls ---------- */
+$('#bm').onclick = () => { const t = local.getAudioTracks()[0]; if (t) t.enabled = !t.enabled; else toast('میکروفون در دسترس نیست.'); syncUI(); };
+$('#bc').onclick = async () => {
+  const old = local.getVideoTracks()[0];
+  if (old) { removeFromAll(old); local.removeTrack(old); old.stop(); }
+  else {
+    try {
+      const v = (await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 360, frameRate: 24 } })).getVideoTracks()[0];
+      local.addTrack(v); addToAll(v, local);
+    } catch { toast('به دوربین دسترسی نداری.'); }
+  }
+  syncUI();
+};
+$('#bs').onclick = async () => {
+  if (screen) return stopScreen();
+  try {
+    screen = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: 30 }, audio: true });
+  } catch { return; }
+  screen.getTracks().forEach(t => addToAll(t, screen));
+  screen.getVideoTracks()[0].onended = stopScreen;
+  addTile('me-screen', screen, 'صفحه تو', true); syncUI();
+};
+function stopScreen() {
+  if (!screen) return;
+  screen.getTracks().forEach(t => { removeFromAll(t); t.stop(); });
+  screen = null; dropTile('me-screen'); syncUI();
+}
+function leaveLocal() {
+  stopScreen();
+  Object.keys(peers).forEach(closePeer);
+  local.getVideoTracks().forEach(t => { local.removeTrack(t); t.stop(); });
+  const a = local.getAudioTracks()[0]; if (a) a.enabled = true;
+  audioCtxs.forEach(c => c.close()); audioCtxs = []; tiles = {}; cur = null; show('lobby');
+}
+$('#bl').onclick = () => { socket.emit('leave'); leaveLocal(); };
+$('#del').onclick = async () => {
+  if (!confirm('روم برای همه حذف شود؟')) return;
+  const r = await emit('delete', cur.id); if (r && r.error) toast(r.error);
+};
+window.addEventListener('beforeunload', () => socket && socket.emit('leave'));
+
+/* ---------- Boot ---------- */
+if (token && me) start(); else { show('auth'); setMode('login'); }
+</script>
+</body>
+</html>
