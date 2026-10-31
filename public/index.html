@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>گیم‌کال</title>
 <style>
+@font-face{font-family:Vazirmatn;font-weight:400;font-display:swap;src:url(/fonts/Vazirmatn-Regular.woff2) format('woff2')}
+@font-face{font-family:Vazirmatn;font-weight:700;font-display:swap;src:url(/fonts/Vazirmatn-Bold.woff2) format('woff2')}
 :root{--bg:#15122a;--panel:#201c3d;--panel2:#2a2551;--line:#3a3466;--tx:#ecebff;--mut:#9d98c8;--ac:#7c6cff;--ac2:#a99dff;--ok:#3ddc97;--bad:#ff5f7e}
 *{box-sizing:border-box;margin:0}
 html,body{height:100%}
@@ -26,6 +28,8 @@ h2{font-size:17px;margin-bottom:14px}
 .mut{color:var(--mut);font-size:13px}
 .msg{min-height:20px;font-size:13px}
 .msg.err{color:var(--bad)}.msg.ok{color:var(--ok)}
+label.chk{display:flex;gap:8px;align-items:center;color:var(--mut);font-size:13px;cursor:pointer}
+label.chk input{width:auto;accent-color:var(--ac)}
 a.lnk{color:var(--ac2);cursor:pointer;font-size:13px;text-align:center}
 .wrap{max-width:920px;margin:0 auto;display:grid;gap:18px}
 .top{display:flex;justify-content:space-between;align-items:center;gap:10px}
@@ -61,6 +65,7 @@ a.lnk{color:var(--ac2);cursor:pointer;font-size:13px;text-align:center}
     <p class="mut" id="sub">برای ورود، نام کاربری و رمز عبورت را وارد کن.</p>
     <input id="u" placeholder="نام کاربری" autocomplete="username">
     <input id="p" type="password" placeholder="رمز عبور" autocomplete="current-password">
+    <label class="chk"><input type="checkbox" id="rm" checked> مرا به خاطر بسپار</label>
     <div id="am" class="msg"></div>
     <button id="go">ورود</button>
     <a class="lnk" id="sw">حساب ندارم</a>
@@ -104,7 +109,8 @@ a.lnk{color:var(--ac2);cursor:pointer;font-size:13px;text-align:center}
 <script src="/socket.io/socket.io.js"></script>
 <script>
 const $ = s => document.querySelector(s);
-let token = localStorage.gt, me = localStorage.gu, socket, mode = 'login', rooms = [], cur = null,
+const ST = () => localStorage.gt ? localStorage : sessionStorage;
+let token = localStorage.gt || sessionStorage.gt, me = localStorage.gu || sessionStorage.gu, socket, mode = 'login', rooms = [], cur = null,
     peers = {}, local = new MediaStream(), screen = null, ICE = [], tiles = {}, audioCtxs = [];
 
 const show = n => ['auth','lobby','room'].forEach(x => $('#'+x).hidden = x !== n);
@@ -128,17 +134,19 @@ async function submit() {
   const d = await r.json();
   if (!r.ok) return msg(d.error);
   if (mode === 'register') { setMode('login', true); $('#p').value = ''; return msg('ساخت حساب با موفقیت انجام شد. حالا وارد شو.', true); }
-  token = localStorage.gt = d.token; me = localStorage.gu = d.username; start();
+  localStorage.clear(); sessionStorage.clear();
+  const st = $('#rm').checked ? localStorage : sessionStorage;
+  token = st.gt = d.token; me = st.gu = d.username; start();
 }
 $('#go').onclick = submit;
-$('#p').onkeydown = e => e.key === 'Enter' && submit();
-$('#out').onclick = () => { localStorage.clear(); location.reload(); };
+$('#p').addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
+$('#out').onclick = () => { localStorage.clear(); sessionStorage.clear(); location.reload(); };
 
 /* ---------- Lobby ---------- */
 async function start() {
   try { ICE = await (await fetch('/api/ice')).json(); } catch { ICE = [{ urls: 'stun:stun.l.google.com:19302' }]; }
   socket = io({ auth: { token } });
-  socket.on('connect_error', e => { if (e.message === 'auth') { localStorage.clear(); location.reload(); } });
+  socket.on('connect_error', e => { if (e.message === 'auth') { localStorage.clear(); sessionStorage.clear(); location.reload(); } });
   socket.on('connect', async () => { rooms = await emit('rooms'); draw(); });
   socket.on('rooms', l => { rooms = l; draw(); });
   socket.on('peer-joined', ({ id, name }) => getPeer(id, name));
