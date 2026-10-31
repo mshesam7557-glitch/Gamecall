@@ -140,13 +140,19 @@ async function submit() {
 }
 $('#go').onclick = submit;
 $('#p').addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
-$('#out').onclick = () => { localStorage.clear(); sessionStorage.clear(); location.reload(); };
+function logout() {
+  localStorage.clear(); sessionStorage.clear(); token = me = null;
+  if (cur) leaveLocal();
+  if (socket) { socket.disconnect(); socket = null; }
+  $('#p').value = ''; show('auth'); setMode('login');
+}
+$('#out').onclick = logout;
 
 /* ---------- Lobby ---------- */
 async function start() {
   try { ICE = await (await fetch('/api/ice')).json(); } catch { ICE = [{ urls: 'stun:stun.l.google.com:19302' }]; }
   socket = io({ auth: { token } });
-  socket.on('connect_error', e => { if (e.message === 'auth') { localStorage.clear(); sessionStorage.clear(); location.reload(); } });
+  socket.on('connect_error', e => { if (e.message === 'auth') logout(); });
   socket.on('connect', async () => { rooms = await emit('rooms'); draw(); });
   socket.on('rooms', l => { rooms = l; draw(); });
   socket.on('peer-joined', ({ id, name }) => getPeer(id, name));
