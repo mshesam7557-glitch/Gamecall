@@ -7,6 +7,14 @@ const MAX_MEMBERS = 6;
 let users = {};
 try { users = JSON.parse(fs.readFileSync(FILE, 'utf8')); } catch {}
 const save = () => { try { fs.writeFileSync(FILE, JSON.stringify(users)); } catch (e) { console.error(e.message); } };
+// Persistent storage: if DATABASE_URL is set, accounts live in Postgres (survive restarts)
+const pool = process.env.DATABASE_URL ? new (require('pg').Pool)({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } }) : null;
+async function init() {
+  if (!pool) return console.warn('DATABASE_URL not set: accounts are stored in a temporary file');
+  await pool.query('create table if not exists users(key text primary key, name text not null, hash text not null)');
+  (await pool.query('select key,name,hash from users')).rows.forEach(r => users[r.key] = { name: r.name, hash: r.hash });
+  console.log('loaded ' + Object.keys(users).length + ' users from database');
+}
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
@@ -14,15 +22,23 @@ app.use(express.static(path.join(__dirname, 'public')));
 const okName = u => typeof u === 'string' && /^[\w\u0600-\u06FF.\-]{3,20}$/.test(u);
 const okPass = p => typeof p === 'string' && p.length >= 4 && p.length <= 64;
 
-app.post('/api/register', (req, res) => {
+app.get('/health', (_, res) => res.send('ok'));
+
+app.post('/api/register', async (req, res) => {
   const { username, password } = req.body || {};
   if (!okName(username)) return res.status(400).json({ error: 'نام کاربری باید ۳ تا ۲۰ حرف (فارسی، انگلیسی، عدد، _ . -) باشد.' });
   if (!okPass(password)) return res.status(400).json({ error: 'رمز عبور باید حداقل ۴ کاراکتر باشد.' });
   const key = username.toLowerCase();
   if (users[key]) return res.status(409).json({ error: 'این نام کاربری قبلاً گرفته شده.' });
-  users[key] = { name: username, hash: bcrypt.hashSync(password, 10) };
-  save();
-  res.json({ ok: true });
+  const u = { name: username, hash: bcrypt.hashSync(password, 10) };
+  try {
+    if (pool) {
+      const r = await pool.query('insert into users(key,name,hash) values($1,$2,$3) on conflict do nothing', [key, u.name, u.hash]);
+      if (!r.rowCount) return res.status(409).json({ error: 'این نام کاربری قبلاً گرفته شده.' });
+    }
+    users[key] = u; if (!pool) save();
+    res.json({ ok: true });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'خطای سرور، دوباره تلاش کن.' }); }
 });
 
 app.post('/api/login', (req, res) => {
@@ -98,4 +114,4 @@ io.on('connection', s => {
   s.on('disconnect', leave);
 });
 
-srv.listen(process.env.PORT || 3000, () => console.log('running'));
+init().then(() => srv.listen(process.env.PORT || 3000, () => console.log('running'))).catch(e => { console.error(e); process.exit(1); });
