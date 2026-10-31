@@ -28,6 +28,14 @@ h2{font-size:17px;margin-bottom:14px}
 .mut{color:var(--mut);font-size:13px}
 .msg{min-height:20px;font-size:13px}
 .msg.err{color:var(--bad)}.msg.ok{color:var(--ok)}
+button.chip{display:flex;align-items:center;gap:8px;padding:6px 14px 6px 8px}
+.sav,.pav{border-radius:50%;background:var(--bg);display:grid;place-items:center;font-weight:700;color:var(--ac2);overflow:hidden;flex:none}
+.sav{width:30px;height:30px;font-size:14px}.pav{width:96px;height:96px;font-size:38px;margin:0 auto}
+.sav img,.pav img,.tile .av img{width:100%;height:100%;object-fit:cover;display:block}
+.tile .av{overflow:hidden}
+.modal{position:fixed;inset:0;background:#0009;display:grid;place-items:center;padding:20px;z-index:8}
+.btns{display:flex;gap:10px;justify-content:center}
+.btns button{padding:8px 14px;font-size:13px}
 label.chk{display:flex;gap:8px;align-items:center;color:var(--mut);font-size:13px;cursor:pointer}
 label.chk input{width:auto;accent-color:var(--ac)}
 a.lnk{color:var(--ac2);cursor:pointer;font-size:13px;text-align:center}
@@ -48,7 +56,8 @@ a.lnk{color:var(--ac2);cursor:pointer;font-size:13px;text-align:center}
 .tile video{width:100%;height:100%;object-fit:contain;background:#0d0b1d}
 .tile.audio video{opacity:0;position:absolute;inset:0}
 .tile .av{width:84px;height:84px;border-radius:50%;background:var(--panel2);display:grid;place-items:center;font-size:34px;font-weight:700;color:var(--ac2)}
-.tile .nm{position:absolute;bottom:10px;right:10px;background:#000a;border-radius:8px;padding:4px 10px;font-size:13px}
+.tile .nm{position:absolute;bottom:10px;right:10px;background:#000a;border-radius:8px;padding:4px 10px;font-size:13px;display:flex;gap:6px}
+.tile.muted .nm{background:#c2314f}
 .tile.talk{border-color:var(--ok);box-shadow:0 0 0 2px #3ddc9755}
 .ctl{display:flex;justify-content:center;gap:10px;flex-wrap:wrap}
 .ctl button{background:var(--panel2);min-width:110px}
@@ -74,7 +83,7 @@ a.lnk{color:var(--ac2);cursor:pointer;font-size:13px;text-align:center}
 
 <div id="lobby" class="screen" hidden>
   <div class="wrap">
-    <div class="top"><h1>گیم‌کال</h1><div class="pill mut"><span id="me"></span><button class="ghost" id="out">خروج</button></div></div>
+    <div class="top"><h1>گیم‌کال</h1><div class="pill"><button class="ghost chip" id="prof"><span class="sav" id="mav"></span><span id="me"></span></button><button class="ghost" id="out">خروج</button></div></div>
     <div class="card" style="max-width:none">
       <h2>ساخت روم جدید</h2>
       <div class="row">
@@ -104,15 +113,29 @@ a.lnk{color:var(--ac2);cursor:pointer;font-size:13px;text-align:center}
     <button id="bl" class="danger">خروج از روم</button>
   </div>
 </div>
+<div class="modal" id="modal" hidden>
+  <div class="card stack">
+    <h2>تنظیمات حساب</h2>
+    <div class="pav" id="pav"></div>
+    <div class="btns"><button class="ghost" onclick="$('#pfile').click()">انتخاب عکس</button><button class="ghost" id="prm">حذف عکس</button></div>
+    <input type="file" id="pfile" accept="image/*" hidden>
+    <input id="nu" placeholder="نام کاربری" maxlength="20">
+    <input id="np" type="password" placeholder="رمز جدید (اگر نمی‌خواهی عوض شود خالی بگذار)" autocomplete="new-password">
+    <input id="cp" type="password" placeholder="رمز فعلی (برای تغییر نام یا رمز لازم است)" autocomplete="current-password">
+    <div id="pm" class="msg err"></div>
+    <div class="btns"><button id="psave">ذخیره</button><button class="ghost" id="pcancel">انصراف</button></div>
+  </div>
+</div>
 <div id="toast" hidden></div>
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
 const $ = s => document.querySelector(s);
 const ST = () => localStorage.gt ? localStorage : sessionStorage;
-let token = localStorage.gt || sessionStorage.gt, me = localStorage.gu || sessionStorage.gu, socket, mode = 'login', rooms = [], cur = null,
+let myAvatar = '', token = localStorage.gt || sessionStorage.gt, me = localStorage.gu || sessionStorage.gu, socket, mode = 'login', rooms = [], cur = null,
     peers = {}, local = new MediaStream(), screen = null, ICE = [], tiles = {}, audioCtxs = [];
 
+let micState = {};
 const show = n => ['auth','lobby','room'].forEach(x => $('#'+x).hidden = x !== n);
 const toast = t => { const e = $('#toast'); e.textContent = t; e.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => e.hidden = true, 3200); };
 const emit = (ev, d) => new Promise(r => socket.emit(ev, d, r));
@@ -141,7 +164,7 @@ async function submit() {
 $('#go').onclick = submit;
 $('#p').addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
 function logout() {
-  localStorage.clear(); sessionStorage.clear(); token = me = null;
+  localStorage.clear(); sessionStorage.clear(); token = me = null; myAvatar = '';
   if (cur) leaveLocal();
   if (socket) { socket.disconnect(); socket = null; }
   $('#p').value = ''; show('auth'); setMode('login');
@@ -151,15 +174,21 @@ $('#out').onclick = logout;
 /* ---------- Lobby ---------- */
 async function start() {
   try { ICE = await (await fetch('/api/ice')).json(); } catch { ICE = [{ urls: 'stun:stun.l.google.com:19302' }]; }
+  try {
+    const r = await fetch('/api/me', { headers: { Authorization: 'Bearer ' + token } });
+    if (r.status === 401) return logout();
+    myAvatar = (await r.json()).avatar || '';
+  } catch {}
   socket = io({ auth: { token } });
   socket.on('connect_error', e => { if (e.message === 'auth') logout(); });
   socket.on('connect', async () => { rooms = await emit('rooms'); draw(); });
   socket.on('rooms', l => { rooms = l; draw(); });
-  socket.on('peer-joined', ({ id, name }) => getPeer(id, name));
+  socket.on('peer-joined', ({ id, name, avatar, mic }) => { micState[id] = mic !== false; getPeer(id, name, avatar); });
+  socket.on('state', ({ id, mic }) => { micState[id] = mic; for (const k in tiles) updTile(k); });
   socket.on('peer-left', closePeer);
   socket.on('signal', onSignal);
   socket.on('room-deleted', () => { toast('صاحب روم، روم را حذف کرد.'); leaveLocal(); });
-  $('#me').textContent = me; show('lobby');
+  renderMe(); show('lobby');
 }
 function draw() {
   const q = $('#q').value.trim().toLowerCase();
@@ -200,9 +229,9 @@ async function join(r, pw) {
   cur = { id: r.id, owner: res.owner };
   $('#rt').textContent = res.name; $('#del').hidden = res.owner !== me;
   show('room'); $('#grid').innerHTML = ''; tiles = {};
-  addTile('me-cam', local, me + ' (تو)', true);
-  res.peers.forEach(p => getPeer(p.id, p.name));
-  syncUI();
+  addTile('me-cam', local, me + ' (تو)', true, myAvatar, 'me');
+  res.peers.forEach(p => { micState[p.id] = p.mic !== false; getPeer(p.id, p.name, p.avatar); });
+  syncUI(); sendState();
 }
 function syncUI() {
   const mic = local.getAudioTracks()[0], cam = local.getVideoTracks()[0];
@@ -213,14 +242,15 @@ function syncUI() {
   $('#rc').textContent = (Object.keys(peers).length + 1) + ' نفر در روم';
   for (const k in tiles) updTile(k);
 }
-function addTile(key, stream, label, mute) {
+function addTile(key, stream, label, mute, avatar, pid) {
   if (tiles[key]) { tiles[key].v.srcObject = stream; return; }
   const el = document.createElement('div'); el.className = 'tile';
-  const av = document.createElement('div'); av.className = 'av'; av.textContent = [...label][0];
+  const av = document.createElement('div'); av.className = 'av'; setAv(av, label, avatar);
   const v = document.createElement('video'); v.autoplay = true; v.playsInline = true; v.muted = !!mute; v.srcObject = stream;
-  const nm = document.createElement('div'); nm.className = 'nm'; nm.textContent = label;
+  const nm = document.createElement('div'); nm.className = 'nm';
+  const mic = document.createElement('span'); nm.append(mic, label);
   el.append(av, v, nm); $('#grid').append(el);
-  tiles[key] = { el, v, stream, av };
+  tiles[key] = { el, v, stream, av, pid, mic };
   stream.onremovetrack = stream.onaddtrack = () => updTile(key);
   v.onplaying = () => updTile(key);
   talkDetect(key, stream);
@@ -230,6 +260,11 @@ function updTile(key) {
   const t = tiles[key]; if (!t) return;
   const hasVid = t.stream.getVideoTracks().some(x => x.readyState === 'live' && !x.muted);
   t.el.classList.toggle('audio', !hasVid); t.av.hidden = hasVid;
+  const hasAud = t.stream.getAudioTracks().length > 0 && t.pid !== 'me-screen';
+  const mt = local.getAudioTracks()[0];
+  const on = t.pid === 'me' ? !!(mt && mt.enabled) : micState[t.pid] !== false;
+  t.mic.hidden = !hasAud; t.mic.textContent = on ? '🎙️' : '🔇';
+  t.el.classList.toggle('muted', hasAud && !on);
 }
 function talkDetect(key, stream) {
   if (!stream.getAudioTracks().length) return;
@@ -246,10 +281,10 @@ function talkDetect(key, stream) {
 function dropTile(key) { const t = tiles[key]; if (t) { t.el.remove(); delete tiles[key]; } }
 
 /* ---------- WebRTC (perfect negotiation) ---------- */
-function getPeer(id, name) {
+function getPeer(id, name, avatar) {
   if (peers[id]) return peers[id];
   const pc = new RTCPeerConnection({ iceServers: ICE });
-  const p = peers[id] = { pc, name, making: false, ignore: false, polite: socket.id < id, keys: new Set() };
+  const p = peers[id] = { pc, name, avatar, making: false, ignore: false, polite: socket.id < id, keys: new Set() };
   local.getTracks().forEach(t => pc.addTrack(t, local));
   if (screen) screen.getTracks().forEach(t => pc.addTrack(t, screen));
   pc.onicecandidate = e => e.candidate && socket.emit('signal', { to: id, data: { candidate: e.candidate } });
@@ -260,7 +295,7 @@ function getPeer(id, name) {
   pc.ontrack = e => {
     const s = e.streams[0]; if (!s) return;
     const key = id + ':' + s.id; p.keys.add(key);
-    addTile(key, s, name + (p.keys.size > 1 && s.getVideoTracks().length && s.getAudioTracks().length === 0 ? ' (صفحه)' : ''), false);
+    addTile(key, s, name + (p.keys.size > 1 && s.getVideoTracks().length && s.getAudioTracks().length === 0 ? ' (صفحه)' : ''), false, p.avatar, id);
     s.onremovetrack = () => { if (!s.getTracks().length) { dropTile(key); p.keys.delete(key); } else updTile(key); };
     e.track.onmute = () => updTile(key); e.track.onunmute = () => updTile(key);
   };
@@ -284,13 +319,14 @@ async function onSignal({ from, data }) {
 }
 function closePeer(id) {
   const p = peers[id]; if (!p) return;
-  p.pc.close(); p.keys.forEach(dropTile); delete peers[id]; syncUI();
+  p.pc.close(); p.keys.forEach(dropTile); delete peers[id]; delete micState[id]; syncUI();
 }
 function addToAll(track, stream) { Object.values(peers).forEach(p => p.pc.addTrack(track, stream)); }
 function removeFromAll(track) { Object.values(peers).forEach(p => { const s = p.pc.getSenders().find(x => x.track === track); if (s) p.pc.removeTrack(s); }); }
 
 /* ---------- Controls ---------- */
-$('#bm').onclick = () => { const t = local.getAudioTracks()[0]; if (t) t.enabled = !t.enabled; else toast('میکروفون در دسترس نیست.'); syncUI(); };
+function sendState() { if (!cur) return; const t = local.getAudioTracks()[0]; socket.emit('state', { mic: !!(t && t.enabled) }); }
+$('#bm').onclick = () => { const t = local.getAudioTracks()[0]; if (t) t.enabled = !t.enabled; else toast('میکروفون در دسترس نیست.'); syncUI(); sendState(); };
 $('#bc').onclick = async () => {
   const old = local.getVideoTracks()[0];
   if (old) { removeFromAll(old); local.removeTrack(old); old.stop(); }
@@ -309,7 +345,7 @@ $('#bs').onclick = async () => {
   } catch { return; }
   screen.getTracks().forEach(t => addToAll(t, screen));
   screen.getVideoTracks()[0].onended = stopScreen;
-  addTile('me-screen', screen, 'صفحه تو', true); syncUI();
+  addTile('me-screen', screen, 'صفحه تو', true, '', 'me-screen'); syncUI();
 };
 function stopScreen() {
   if (!screen) return;
@@ -329,6 +365,46 @@ $('#del').onclick = async () => {
   const r = await emit('delete', cur.id); if (r && r.error) toast(r.error);
 };
 window.addEventListener('beforeunload', () => socket && socket.emit('leave'));
+
+/* ---------- Profile ---------- */
+function setAv(el, label, avatar) {
+  el.textContent = '';
+  if (avatar) { const i = new Image(); i.src = avatar; el.append(i); } else el.textContent = [...label][0] || '?';
+}
+function renderMe() { $('#me').textContent = me; setAv($('#mav'), me, myAvatar); }
+let pendAv;
+$('#prof').onclick = () => {
+  pendAv = undefined; $('#nu').value = me; $('#np').value = $('#cp').value = ''; $('#pm').textContent = '';
+  setAv($('#pav'), me, myAvatar); $('#modal').hidden = false;
+};
+$('#pcancel').onclick = () => $('#modal').hidden = true;
+$('#prm').onclick = () => { pendAv = ''; setAv($('#pav'), me, ''); };
+$('#pfile').onchange = e => {
+  const f = e.target.files[0]; if (!f) return;
+  const img = new Image();
+  img.onload = () => {
+    const c = document.createElement('canvas'); c.width = c.height = 128;
+    const m = Math.min(img.width, img.height);
+    c.getContext('2d').drawImage(img, (img.width - m) / 2, (img.height - m) / 2, m, m, 0, 0, 128, 128);
+    pendAv = c.toDataURL('image/jpeg', 0.82); setAv($('#pav'), me, pendAv); URL.revokeObjectURL(img.src);
+  };
+  img.onerror = () => $('#pm').textContent = 'این فایل عکس معتبری نیست.';
+  img.src = URL.createObjectURL(f); e.target.value = '';
+};
+$('#psave').onclick = async () => {
+  const body = { currentPassword: $('#cp').value }, nu = $('#nu').value.trim();
+  if (nu && nu !== me) body.newUsername = nu;
+  if ($('#np').value) body.newPassword = $('#np').value;
+  if (pendAv !== undefined) body.avatar = pendAv;
+  if (Object.keys(body).length === 1) { $('#modal').hidden = true; return; }
+  const r = await fetch('/api/profile', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token }, body: JSON.stringify(body) });
+  const d = await r.json();
+  if (!r.ok) { $('#pm').textContent = d.error; return; }
+  const st = localStorage.gt ? localStorage : sessionStorage;
+  token = st.gt = d.token; me = st.gu = d.username; myAvatar = d.avatar;
+  $('#modal').hidden = true; toast('تغییرات ذخیره شد.');
+  if (socket) socket.disconnect(); start();
+};
 
 /* ---------- Boot ---------- */
 if (token && me) start(); else { show('auth'); setMode('login'); }
