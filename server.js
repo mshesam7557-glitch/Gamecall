@@ -77,7 +77,7 @@ io.on('connection', s => {
     s.roomId = null; push();
   };
 
-  s.on('rooms', ack => ack(pub()));
+  s.on('rooms', (...a) => { const ack = a.find(x => typeof x === 'function'); if (ack) ack(pub()); });
 
   s.on('create', ({ name, password }, ack) => {
     name = String(name || '').trim().slice(0, 30);
@@ -113,5 +113,8 @@ io.on('connection', s => {
 
   s.on('disconnect', leave);
 });
+
+process.on('uncaughtException', e => console.error('uncaught', e));
+process.on('unhandledRejection', e => console.error('unhandled', e));
 
 init().then(() => srv.listen(process.env.PORT || 3000, () => console.log('running'))).catch(e => { console.error(e); process.exit(1); });
