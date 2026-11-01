@@ -100,7 +100,8 @@ app.get('/api/ice', (_, res) => {
 
 // ---- Rooms (in memory) ----
 const rooms = new Map();
-const pub = () => [...rooms.values()].map(r => ({ id: r.id, name: r.name, locked: !!r.hash, count: r.members.size, owner: r.owner, ask: !!r.ask }));
+const pub = () => [...rooms.values()].map(r => ({ id: r.id, name: r.name, locked: !!r.hash, count: r.members.size, owner: r.owner, ask: !!r.ask, max: r.max }));
+const avOf = n => (users[String(n).toLowerCase()] || {}).avatar || '';
 const push = () => io.emit('rooms', pub());
 
 io.use((s, next) => {
@@ -121,12 +122,12 @@ io.on('connection', s => {
 
   s.on('rooms', (...a) => { const ack = a.find(x => typeof x === 'function'); if (ack) ack(pub()); });
 
-  s.on('create', ({ name, password }, ack) => {
+  s.on('create', ({ name, password, max }, ack) => {
     name = String(name || '').trim().slice(0, 30);
     if (name.length < 2) return ack({ error: 'نام روم باید حداقل ۲ حرف باشد.' });
     if ([...rooms.values()].some(r => r.name.toLowerCase() === name.toLowerCase())) return ack({ error: 'روم دیگری با این نام وجود دارد.' });
     const id = Math.random().toString(36).slice(2, 9);
-    rooms.set(id, { id, name, owner: s.user, hash: password ? bcrypt.hashSync(String(password), 8) : null, members: new Map(), msgs: [] });
+    rooms.set(id, { id, name, owner: s.user, hash: password ? bcrypt.hashSync(String(password), 8) : null, members: new Map(), msgs: [], max: Math.min(10, Math.max(2, parseInt(max) || 6)) });
     push(); ack({ ok: true, id });
   });
 
@@ -135,7 +136,7 @@ io.on('connection', s => {
     if (!r) return ack({ error: 'این روم دیگر وجود ندارد.' });
     const knocked = !!(r.allowed && r.allowed.delete(s.id));
     if (r.hash && !knocked && !bcrypt.compareSync(String(password || ''), r.hash)) return ack({ error: 'رمز روم اشتباه است.' });
-    if (r.members.size >= MAX_MEMBERS && !r.members.has(s.id)) return ack({ error: 'ظرفیت روم پر است.' });
+    if (r.members.size >= r.max && !r.members.has(s.id)) return ack({ error: 'ظرفیت روم پر است.' });
     if (s.roomId) leave();
     const av = n => (users[n.toLowerCase()] || {}).avatar || '';
     const peers = [...r.members].map(([sid, name]) => ({ id: sid, name, avatar: av(name), mic: (io.sockets.sockets.get(sid) || {}).mic !== false }));
