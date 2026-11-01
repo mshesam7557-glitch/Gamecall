@@ -96,14 +96,6 @@ input[type=range]{padding:0;border:0;background:none;accent-color:var(--ac)}
 .cin button{padding:8px 12px}
 @media(max-width:800px){.main{flex-direction:column}#chat{width:auto;height:38%}}
 .kick{position:absolute;top:10px;left:10px;padding:5px 10px;font-size:12px;background:#c2314f;z-index:2}
-.sheet{max-width:440px;max-height:90vh;overflow:auto;display:grid;gap:18px}
-.sheet section{display:grid;gap:14px;padding-top:16px;border-top:1px solid var(--line)}
-.sheet h3{margin:0;font-size:16px}
-.sheet label{display:grid;gap:6px;font-size:14px}
-.sheet label>span{display:flex;justify-content:space-between}
-.sheet label.chk{display:flex;align-items:flex-start;gap:10px}
-.sheet small{display:block;color:var(--mut);font-size:12px;margin-top:2px;font-weight:400}
-.sheet input[type=range]{height:22px}
 select{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px 10px;color:inherit;font:inherit}
 @media(max-width:640px){.row{grid-template-columns:1fr!important}}
 :root{--bg:#120f26;--panel:#1c1838;--panel2:#282350}
@@ -134,13 +126,62 @@ button:disabled{opacity:.45;filter:grayscale(.6)}
 .screen{padding-bottom:calc(20px + env(safe-area-inset-bottom))}
 @media(max-width:800px){#chat{position:fixed;inset:auto 0 0 0;width:auto;height:58dvh;z-index:6;border-radius:20px 20px 0 0;box-shadow:0 -10px 40px #000a}.grid{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))!important}.ctl{width:100%;justify-content:space-between}.ctl button{min-width:0;flex:1;padding:8px 2px}.ctl button span{font-size:10px}}
 @media(max-width:560px){.room{flex-wrap:wrap}.room .pill{width:100%}.room .pill button{flex:1}.modal{align-items:end;padding:0}.sheet{max-width:none!important;border-radius:20px 20px 0 0;max-height:88dvh}.top{flex-wrap:wrap}}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@keyframes rise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+@keyframes pop{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:none}}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:none}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes float{50%{transform:translateY(-6px)}}
+@keyframes talk{50%{box-shadow:0 0 0 5px #3ddc9733,0 0 24px #3ddc9755}}
+@keyframes tin{from{opacity:0;margin-bottom:-14px}to{opacity:1}}
+.screen:not([hidden]),#room:not([hidden]){animation:rise .45s cubic-bezier(.2,.8,.3,1)}
+#room:not([hidden]) .ctl{animation:rise .55s .1s both cubic-bezier(.2,.8,.3,1)}
+.modal:not([hidden]){animation:fade .25s;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.modal:not([hidden])>.card{animation:pop .3s cubic-bezier(.2,.9,.3,1.2)}
+#toast:not([hidden]){animation:tin .3s}
+.tile{animation:pop .35s cubic-bezier(.2,.9,.3,1.2)}
+.tile.talk{animation:talk 1.2s ease-in-out infinite}
+button:hover{filter:brightness(1.12);transform:translateY(-1px)}
+button:active{transform:scale(.96)}
+.logo{width:68px;height:68px;border-radius:22px;display:grid;place-items:center;font-size:34px;justify-self:center;background:linear-gradient(135deg,#8a7bff,#5a49e8);box-shadow:0 12px 32px #6a5cf066;animation:float 3.2s ease-in-out infinite}
+#auth h1,#auth .mut{text-align:center}
+input[type=checkbox]{-webkit-appearance:none;appearance:none;width:44px!important;min-width:44px;height:26px;padding:0;border:0;border-radius:20px;background:#ffffff24;position:relative;transition:background .25s;flex:none}
+input[type=checkbox]::after{content:'';position:absolute;top:3px;right:3px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 2px 6px #0006;transition:transform .3s cubic-bezier(.34,1.56,.64,1)}
+input[type=checkbox]:checked{background:linear-gradient(135deg,#8a7bff,#6a5cf0)}
+input[type=checkbox]:checked::after{transform:translateX(-18px)}
+input[type=range]{-webkit-appearance:none;appearance:none;direction:ltr;height:8px;padding:0;border:0;border-radius:8px;outline:none;background:linear-gradient(90deg,#8a7bff var(--p,50%),#ffffff1c var(--p,50%))}
+input[type=range]:focus{box-shadow:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 0 0 5px #7c6cff55,0 2px 8px #0008;transition:transform .15s}
+input[type=range]:active::-webkit-slider-thumb{transform:scale(1.2)}
+input[type=range]::-moz-range-thumb{width:22px;height:22px;border:0;border-radius:50%;background:#fff;box-shadow:0 0 0 5px #7c6cff55}
+select{-webkit-appearance:none;appearance:none;background:var(--bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='9'%3E%3Cpath d='M1 1l6 6 6-6' fill='none' stroke='%23a99dff' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat left 14px center}
+#set .sheet{width:100%;max-width:460px;max-height:90dvh;padding:0;display:flex;flex-direction:column;overflow:hidden}
+.sh{display:flex;align-items:center;gap:12px;padding:18px 20px;border-bottom:1px solid var(--line);background:linear-gradient(135deg,#3d3487,#241f47)}
+.sh h2{margin:0;font-size:18px}.sh p{margin:2px 0 0;font-size:12px;color:#d6d1ff99}
+.sico{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;font-size:22px;background:#ffffff1f}
+.sico{animation:spin 14s linear infinite}
+.sh .x{margin-inline-start:auto;width:36px;height:36px;padding:0;border-radius:50%}
+.sbody{overflow:auto;padding:16px;display:grid;gap:14px}
+.sc{background:#ffffff08;border:1px solid #ffffff12;border-radius:16px;padding:16px;display:grid;gap:18px}
+.scH{display:flex;gap:12px;align-items:center}
+.scH h3{margin:0;font-size:15px}.scH p{margin:2px 0 0;font-size:12px;color:var(--mut)}
+.bub{width:40px;height:40px;border-radius:13px;display:grid;place-items:center;background:linear-gradient(135deg,#8a7bff55,#6a5cf055);font-size:19px;flex:none}
+.row-s{display:grid;gap:10px}
+.rl{display:flex;justify-content:space-between;align-items:center;font-size:14px}
+.rl b{background:#7c6cff33;color:var(--ac2);border-radius:20px;padding:1px 10px;font-size:12px}
+.row-s small,.sw small{display:block;color:var(--mut);font-size:12px;font-weight:400;margin-top:2px;line-height:1.6}
+.sw{display:flex;align-items:center;justify-content:space-between;gap:14px;font-size:14px}
+.sw b{font-weight:600}
+.donate{background:linear-gradient(135deg,#ff6b9a,#ff8f6b)!important;color:#fff}
+@media(max-width:560px){#set.modal>.card.sheet{animation:slideUp .4s cubic-bezier(.2,.9,.3,1);border-radius:24px 24px 0 0;max-width:none}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
 <body>
 
 <div id="auth" class="screen center" hidden>
   <div class="card stack">
-    <h1>گیم‌کال</h1>
+    <div class="logo">🎧</div><h1>گیم‌کال</h1>
     <p class="mut" id="sub">برای ورود، نام کاربری و رمز عبورت را وارد کن.</p>
     <input id="u" placeholder="نام کاربری" autocomplete="username">
     <input id="p" type="password" placeholder="رمز عبور" autocomplete="current-password">
@@ -204,18 +245,22 @@ button:disabled{opacity:.45;filter:grayscale(.6)}
 </div>
 <div id="bg"></div>
 <div id="set" class="modal" hidden><div class="card sheet">
-  <div class="top"><h2 style="margin:0">⚙️ تنظیمات</h2><button class="ghost" id="sc">بستن</button></div>
-  <section><h3>🔊 صدا</h3>
-    <label><span>صدای افراد روم <b id="svv"></b></span><input type="range" id="sv" min="0" max="400"><small>بلندی صدای دوستانت. بالای ۱۰۰٪ صدا را تقویت می‌کند.</small></label>
-    <label><span>صدای محیط <b id="sav"></b></span><input type="range" id="sa" min="0" max="100"><small>افکت‌های سایت: کلیک دکمه‌ها، ورود و خروج افراد، پیام جدید و ...</small></label>
-    <label class="chk"><input type="checkbox" id="sr"><span>حالت صدای بلندتر برای موبایل<small>حذف اکو و نویز را خاموش می‌کند. با هدفون استفاده کن. از ورود بعدی به روم اعمال می‌شود.</small></span></label>
-  </section>
-  <section id="inroom" hidden><h3>👥 داخل روم</h3>
-    <div class="mut">صدای هر نفر (فقط برای خودت اعمال می‌شود)</div><div id="pvs" class="stack"></div>
-    <label class="chk" id="askw" hidden><input type="checkbox" id="ask"><span>ورود با اجازه<small>کنار دکمه‌ی ورود در لیست، «ورود با اجازه» هم نمایش داده می‌شود و درخواست‌ها به تو می‌رسد.</small></span></label>
-  </section>
-  <section><h3>🖥️ اشتراک صفحه</h3><label><span>کیفیت</span><select id="sq"><option value="0">۷۲۰p • ۳۰ فریم (سبک)</option><option value="1">۱۰۸۰p • ۳۰ فریم</option><option value="2">۱۰۸۰p • ۶۰ فریم (سنگین)</option></select><small>کیفیت بالاتر آپلود بیشتری می‌خواهد. اگر بازی یا اینترنتت افت کرد، پایین‌ترش کن.</small></label></section>
-    <a class="btn" href="https://reymit.ir/ms_hesam_donate" target="_blank" rel="noopener">❤️ حمایت مالی</a>
+  <div class="sh"><div class="sico">⚙️</div><div><h2>تنظیمات</h2><p>صدا، کیفیت و گزینه‌های روم</p></div><button class="ghost x" id="sc">✕</button></div>
+  <div class="sbody">
+    <section class="sc"><div class="scH"><span class="bub">🔊</span><div><h3>صدا</h3><p>بلندی صدای دوستان و افکت‌های سایت</p></div></div>
+      <div class="row-s"><div class="rl"><span>صدای افراد روم</span><b id="svv"></b></div><input type="range" id="sv" min="0" max="400"><small>بالای ۱۰۰٪ صدا را تقویت می‌کند.</small></div>
+      <div class="row-s"><div class="rl"><span>صدای محیط</span><b id="sav"></b></div><input type="range" id="sa" min="0" max="100"><small>کلیک دکمه‌ها، ورود و خروج افراد، پیام جدید و ...</small></div>
+      <label class="sw"><span><b>حالت صدای بلندتر موبایل</b><small>حذف اکو و نویز را خاموش می‌کند؛ با هدفون استفاده کن. از ورود بعدی به روم اعمال می‌شود.</small></span><input type="checkbox" id="sr"></label>
+    </section>
+    <section id="inroom" class="sc" hidden><div class="scH"><span class="bub">👥</span><div><h3>داخل روم</h3><p>فقط برای خودت اعمال می‌شود</p></div></div>
+      <div id="pvs" class="stack"></div>
+      <label class="sw" id="askw" hidden><span><b>ورود با اجازه</b><small>کنار دکمه‌ی ورود، «ورود با اجازه» هم نمایش داده می‌شود و درخواست‌ها به تو می‌رسد.</small></span><input type="checkbox" id="ask"></label>
+    </section>
+    <section class="sc"><div class="scH"><span class="bub">🖥️</span><div><h3>اشتراک صفحه</h3><p>کیفیت تصویر برای دوستانت</p></div></div>
+      <div class="row-s"><select id="sq"><option value="0">۷۲۰p • ۳۰ فریم (سبک)</option><option value="1">۱۰۸۰p • ۳۰ فریم</option><option value="2">۱۰۸۰p • ۶۰ فریم (سنگین)</option></select><small>کیفیت بالاتر آپلود بیشتری می‌خواهد. اگر بازی یا اینترنتت افت کرد، پایین‌ترش کن.</small></div>
+    </section>
+    <a class="btn donate" href="https://reymit.ir/ms_hesam_donate" target="_blank" rel="noopener">❤️ حمایت از گیم‌کال</a>
+  </div>
 </div></div>
 <div id="kn" class="modal" hidden><div class="card stack"><div id="kt"></div><div class="row2" style="display:flex;gap:10px"><button id="ky">بله</button><button id="kno" class="danger">نه</button></div></div></div>
 <div id="toast" hidden></div>
@@ -549,6 +594,8 @@ function sfx(n) {
   } catch {}
 }
 document.addEventListener('click', e => { if (e.target.closest('button,a.btn')) sfx('click'); });
+const paintRange = r => r.style.setProperty('--p', (r.value - r.min) / (r.max - r.min) * 100 + '%');
+document.addEventListener('input', e => { if (e.target.type === 'range') paintRange(e.target); });
 let deaf = false, unread = 0;
 const SQ = [{ width: 1280, height: 720, frameRate: 30 }, { width: 1920, height: 1080, frameRate: 30 }, { width: 1920, height: 1080, frameRate: 60 }];
 const setBtn = (id, i, t) => { $(id).innerHTML = '<i>' + i + '</i><span>' + t + '</span>'; };
@@ -579,16 +626,17 @@ function buildPV() {
   $('#askw').hidden = cur.owner !== me; $('#ask').checked = !!cur.ask;
   const box = $('#pvs'); box.innerHTML = '';
   Object.values(peers).forEach(p => {
-    const l = document.createElement('label'), n = document.createElement('span'), r = document.createElement('input');
+    const l = document.createElement('div'), h = document.createElement('div'), n = document.createElement('span'), v = document.createElement('b'), r = document.createElement('input');
+    l.className = 'row-s'; h.className = 'rl'; n.textContent = p.name; h.append(n, v);
     r.type = 'range'; r.min = 0; r.max = 400; r.value = PV[p.name] ?? 100;
-    const upd = () => n.textContent = p.name + ' — ' + r.value + '٪'; upd();
+    const upd = () => { v.textContent = r.value + '٪'; paintRange(r); }; upd();
     r.oninput = () => { PV[p.name] = +r.value; saveCfg(); applyVol(); upd(); };
-    l.append(n, r); box.append(l);
+    l.append(h, r); box.append(l);
   });
   if (!box.children.length) box.textContent = 'هنوز کسی در روم نیست.';
 }
 const lab = () => { $('#svv').textContent = CFG.voice + '٪'; $('#sav').textContent = CFG.amb + '٪'; };
-document.querySelectorAll('.gearbtn').forEach(b => b.onclick = () => { lab(); $('#set').hidden = false; buildPV(); });
+document.querySelectorAll('.gearbtn').forEach(b => b.onclick = () => { lab(); $('#set').hidden = false; buildPV(); document.querySelectorAll('#set input[type=range]').forEach(paintRange); });
 $('#sc').onclick = () => $('#set').hidden = true;
 $('#set').onclick = e => { if (e.target.id === 'set') e.target.hidden = true; };
 $('#sv').value = CFG.voice; $('#sa').value = CFG.amb; $('#sr').checked = CFG.raw; lab();
