@@ -41,7 +41,7 @@ label.chk input{width:auto;accent-color:var(--ac)}
 a.lnk{color:var(--ac2);cursor:pointer;font-size:13px;text-align:center}
 .wrap{max-width:920px;margin:0 auto;display:grid;gap:18px}
 .top{display:flex;justify-content:space-between;align-items:center;gap:10px}
-.row{display:grid;grid-template-columns:1fr 1fr auto;gap:10px}
+.row{display:grid;grid-template-columns:1fr 1fr auto auto;gap:10px}
 .rooms{display:grid;gap:10px;margin-top:14px}
 .room{display:flex;align-items:center;justify-content:space-between;background:var(--panel2);border-radius:14px;padding:14px 16px;gap:10px}
 .room b{font-size:16px}
@@ -65,9 +65,10 @@ a.lnk{color:var(--ac2);cursor:pointer;font-size:13px;text-align:center}
 .ctl button.off{background:var(--bad)}
 #toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--panel2);border:1px solid var(--line);padding:10px 18px;border-radius:10px;z-index:9}
 
-body{cursor:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28'%3E%3Cpath d='M3 3l7 19 3-8 8-3z' fill='%237c6cff' stroke='white' stroke-width='1.6' stroke-linejoin='round'/%3E%3C/svg%3E") 3 3,auto}
-button,a,label.file,label.chk,input[type=range],input[type=checkbox]{cursor:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' fill='none' stroke='%233ddc97' stroke-width='2'%3E%3Ccircle cx='16' cy='16' r='7'/%3E%3Cpath d='M16 3v8M16 21v8M3 16h8M21 16h8'/%3E%3C/svg%3E") 16 16,pointer}
-input[type=text],input:not([type]),input[type=password]{cursor:text}
+body{cursor:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='26' height='26'%3E%3Cpath d='M4 3l15 7-6.5 2.2L10 19z' fill='%237c6cff' stroke='white' stroke-width='1.6' stroke-linejoin='round'/%3E%3C/svg%3E") 4 3,auto}
+button,a,label,select,input[type=range],input[type=checkbox]{cursor:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='26' height='26'%3E%3Cpath d='M4 3l15 7-6.5 2.2L10 19z' fill='white' stroke='%237c6cff' stroke-width='1.6' stroke-linejoin='round'/%3E%3C/svg%3E") 4 3,pointer}
+input,textarea{cursor:text}
+input[type=range],input[type=checkbox]{cursor:inherit}
 #bg{position:fixed;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(420px at var(--mx,70%) var(--my,15%),#7c6cff44,transparent 70%),repeating-linear-gradient(0deg,#ffffff08 0 1px,transparent 1px 44px),repeating-linear-gradient(90deg,#ffffff08 0 1px,transparent 1px 44px);animation:gm 25s linear infinite}
 @keyframes gm{to{background-position:0 0,0 44px,44px 0}}
 body.noBg #bg,body.inroom #bg{display:none}
@@ -93,6 +94,16 @@ input[type=range]{padding:0;border:0;background:none;accent-color:var(--ac)}
 .cin{display:flex;gap:6px;padding:8px}
 .cin button{padding:8px 12px}
 @media(max-width:800px){.main{flex-direction:column}#chat{width:auto;height:38%}}
+.sheet{max-width:440px;max-height:90vh;overflow:auto;display:grid;gap:18px}
+.sheet section{display:grid;gap:14px;padding-top:16px;border-top:1px solid var(--line)}
+.sheet h3{margin:0;font-size:16px}
+.sheet label{display:grid;gap:6px;font-size:14px}
+.sheet label>span{display:flex;justify-content:space-between}
+.sheet label.chk{display:flex;align-items:flex-start;gap:10px}
+.sheet small{display:block;color:var(--mut);font-size:12px;margin-top:2px;font-weight:400}
+.sheet input[type=range]{height:22px}
+select{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px 10px;color:inherit;font:inherit}
+@media(max-width:640px){.row{grid-template-columns:1fr!important}}
 </style>
 </head>
 <body>
@@ -112,12 +123,13 @@ input[type=range]{padding:0;border:0;background:none;accent-color:var(--ac)}
 
 <div id="lobby" class="screen" hidden>
   <div class="wrap">
-    <div class="top"><h1>گیم‌کال</h1><div class="pill"><button class="ghost chip" id="prof"><span class="sav" id="mav"></span><span id="me"></span></button><a class="btn" href="https://reymit.ir/ms_hesam_donate" target="_blank" rel="noopener">❤️ حمایت مالی</a><button class="ghost" id="out">خروج</button></div></div>
+    <div class="top"><h1>گیم‌کال</h1><div class="pill"><button class="ghost chip" id="prof"><span class="sav" id="mav"></span><span id="me"></span></button><button class="ghost gearbtn">⚙️ تنظیمات</button><a class="btn" href="https://reymit.ir/ms_hesam_donate" target="_blank" rel="noopener">❤️ حمایت مالی</a><button class="ghost" id="out">خروج</button></div></div>
     <div class="card" style="max-width:none">
       <h2>ساخت روم جدید</h2>
       <div class="row">
         <input id="rn" placeholder="نام روم" maxlength="30">
         <input id="rp" type="password" placeholder="رمز (اختیاری)">
+        <select id="rmx" title="حداکثر ظرفیت روم"><option value="2">ظرفیت: 2 نفر</option><option value="3">ظرفیت: 3 نفر</option><option value="4">ظرفیت: 4 نفر</option><option value="5">ظرفیت: 5 نفر</option><option value="6" selected>ظرفیت: 6 نفر</option><option value="7">ظرفیت: 7 نفر</option><option value="8">ظرفیت: 8 نفر</option><option value="9">ظرفیت: 9 نفر</option><option value="10">ظرفیت: 10 نفر</option></select>
         <button id="mk">ساخت روم</button>
       </div>
     </div>
@@ -140,6 +152,7 @@ input[type=range]{padding:0;border:0;background:none;accent-color:var(--ac)}
     <button id="bm" class="on">میکروفون</button>
     <button id="bc">دوربین</button>
     <button id="bs">اشتراک صفحه</button>
+    <button class="gearbtn">⚙️ تنظیمات</button>
     <button id="bch">چت</button>
     <button id="bl" class="danger">خروج از روم</button>
   </div>
@@ -158,19 +171,22 @@ input[type=range]{padding:0;border:0;background:none;accent-color:var(--ac)}
   </div>
 </div>
 <div id="bg"></div>
-<button id="gear" class="ghost" title="تنظیمات" hidden>⚙️ تنظیمات</button>
-<div id="set" class="pop" hidden>
-  <h2 style="margin:0">تنظیمات</h2>
-  <label>صدای افراد روم<input type="range" id="sv" min="0" max="100"></label>
-  <label>صدای محیط (افکت‌های صوتی)<input type="range" id="sa" min="0" max="100"></label>
-  <label class="chk"><input type="checkbox" id="sb"> پس‌زمینه‌ی متحرک</label>
-  <div id="inroom" hidden class="stack">
-    <h2 style="margin:0">دسترسی سریع روم</h2>
-    <label class="chk" id="askw" hidden><input type="checkbox" id="ask"> ورود با اجازه</label>
-    <div class="mut">صدای هر نفر:</div><div id="pvs" class="stack"></div>
-  </div>
+<div id="set" class="modal" hidden><div class="card sheet">
+  <div class="top"><h2 style="margin:0">⚙️ تنظیمات</h2><button class="ghost" id="sc">بستن</button></div>
+  <section><h3>🔊 صدا</h3>
+    <label><span>صدای افراد روم <b id="svv"></b></span><input type="range" id="sv" min="0" max="300"><small>بلندی صدای دوستانت. بالای ۱۰۰٪ صدا را تقویت می‌کند.</small></label>
+    <label><span>صدای محیط <b id="sav"></b></span><input type="range" id="sa" min="0" max="100"><small>افکت‌های سایت: کلیک دکمه‌ها، ورود و خروج افراد، پیام جدید و ...</small></label>
+    <label class="chk"><input type="checkbox" id="sr"><span>حالت صدای بلندتر برای موبایل<small>حذف اکو و نویز را خاموش می‌کند. با هدفون استفاده کن. از ورود بعدی به روم اعمال می‌شود.</small></span></label>
+  </section>
+  <section id="inroom" hidden><h3>👥 داخل روم</h3>
+    <div class="mut">صدای هر نفر (فقط برای خودت اعمال می‌شود)</div><div id="pvs" class="stack"></div>
+    <label class="chk" id="askw" hidden><input type="checkbox" id="ask"><span>ورود با اجازه<small>کنار دکمه‌ی ورود در لیست، «ورود با اجازه» هم نمایش داده می‌شود و درخواست‌ها به تو می‌رسد.</small></span></label>
+  </section>
+  <section><h3>🎨 ظاهر</h3>
+    <label class="chk"><input type="checkbox" id="sb"><span>پس‌زمینه‌ی متحرک<small>داخل روم برای سبک ماندن بازی خودکار خاموش است.</small></span></label>
+  </section>
   <a class="btn" href="https://reymit.ir/ms_hesam_donate" target="_blank" rel="noopener">❤️ حمایت مالی</a>
-</div>
+</div></div>
 <div id="kn" class="modal" hidden><div class="card stack"><div id="kt"></div><div class="row2" style="display:flex;gap:10px"><button id="ky">بله</button><button id="kno" class="danger">نه</button></div></div></div>
 <div id="toast" hidden></div>
 
@@ -184,7 +200,7 @@ let myAvatar = '', token = localStorage.gt || sessionStorage.gt, me = localStora
 let micState = {};
 const show = n => {
   ['auth','lobby','room'].forEach(x => $('#'+x).hidden = x !== n);
-  document.body.classList.toggle('inroom', n === 'room'); $('#gear').hidden = n === 'auth'; $('#set').hidden = true;
+  document.body.classList.toggle('inroom', n === 'room'); $('#set').hidden = true;
   if (n !== 'room') $('#msgs').innerHTML = '';
 };
 const toast = t => { const e = $('#toast'); e.textContent = t; e.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => e.hidden = true, 3200); };
@@ -255,7 +271,7 @@ function draw() {
     const b = document.createElement('b'); b.textContent = (r.locked ? '🔒 ' : '') + r.name;
     const m = document.createElement('div'); m.className = 'meta';
     m.innerHTML = '<span class="pill"><span class="dot"></span><span></span></span><span></span>';
-    m.children[0].children[1].textContent = r.count + ' نفر'; m.children[1].textContent = 'سازنده: ' + r.owner;
+    m.children[0].children[1].textContent = r.count + '/' + (r.max || 6) + ' نفر'; m.children[1].textContent = 'سازنده: ' + r.owner;
     const j = document.createElement('button'); j.textContent = 'ورود';
     j.onclick = () => join(r);
     const bt = document.createElement('div'); bt.className = 'pill'; bt.append(j);
@@ -267,7 +283,7 @@ function draw() {
 $('#q').oninput = draw;
 $('#mk').onclick = async () => {
   const name = $('#rn').value, password = $('#rp').value;
-  const r = await emit('create', { name, password });
+  const r = await emit('create', { name, password, max: +$('#rmx').value });
   if (r.error) return toast(r.error);
   $('#rn').value = $('#rp').value = '';
   join({ id: r.id, name, owner: me }, password);
@@ -276,10 +292,11 @@ $('#mk').onclick = async () => {
 /* ---------- Room ---------- */
 async function join(r, pw) {
   if (r.locked && pw === undefined) { pw = prompt('رمز روم را وارد کن'); if (pw === null) return; }
+  if (local.getAudioTracks().length && localRaw !== CFG.raw) local.getAudioTracks().forEach(t => { t.stop(); local.removeTrack(t); });
   if (!local.getAudioTracks().length) {
     try {
-      const a = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
-      a.getAudioTracks().forEach(t => local.addTrack(t));
+      const a = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: !CFG.raw, noiseSuppression: !CFG.raw, autoGainControl: !CFG.raw } });
+      a.getAudioTracks().forEach(t => local.addTrack(t)); localRaw = CFG.raw;
     } catch { toast('به میکروفون دسترسی نداری؛ فقط می‌توانی گوش بدهی.'); }
   }
   const res = await emit('join', { id: r.id, password: pw });
@@ -467,7 +484,7 @@ $('#psave').onclick = async () => {
 };
 
 /* ---------- Settings, sounds, chat, join-permission ---------- */
-const CFG = Object.assign({ voice: 100, amb: 70, bg: true }, JSON.parse(localStorage.gcfg || '{}'));
+const CFG = Object.assign({ voice: 100, amb: 70, bg: true, raw: false }, JSON.parse(localStorage.gcfg || '{}'));
 const PV = JSON.parse(localStorage.gpv || '{}');
 const saveCfg = () => { localStorage.gcfg = JSON.stringify(CFG); localStorage.gpv = JSON.stringify(PV); };
 let actx;
@@ -487,26 +504,48 @@ function sfx(n) {
   } catch {}
 }
 document.addEventListener('click', e => { if (e.target.closest('button,a.btn')) sfx('click'); });
-function applyVol() {
-  for (const k in tiles) { const t = tiles[k], p = peers[t.pid]; if (p) t.v.volume = Math.min(1, CFG.voice / 100 * (PV[p.name] ?? 100) / 100); }
+const IOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+let localRaw;
+function routeAudio(t) {
+  if (IOS) return;
+  try {
+    actx = actx || new AudioContext();
+    const g = actx.createGain();
+    actx.createMediaStreamSource(new MediaStream(t.stream.getAudioTracks())).connect(g).connect(actx.destination);
+    t.gain = g; t.v.muted = true;
+  } catch {}
 }
+function applyVol() {
+  for (const k in tiles) {
+    const t = tiles[k], p = peers[t.pid]; if (!p) continue;
+    if (!t.gain && t.stream.getAudioTracks().length) routeAudio(t);
+    const v = CFG.voice / 100 * (PV[p.name] ?? 100) / 100;
+    if (t.gain) t.gain.gain.value = v; else t.v.volume = Math.min(1, v);
+  }
+}
+document.addEventListener('click', () => { if (actx && actx.state === 'suspended') actx.resume(); });
 function buildPV() {
   $('#inroom').hidden = !cur; if (!cur) return;
   $('#askw').hidden = cur.owner !== me; $('#ask').checked = !!cur.ask;
   const box = $('#pvs'); box.innerHTML = '';
   Object.values(peers).forEach(p => {
-    const l = document.createElement('label'); l.textContent = p.name;
-    const r = document.createElement('input'); r.type = 'range'; r.min = 0; r.max = 100; r.value = PV[p.name] ?? 100;
-    r.oninput = () => { PV[p.name] = +r.value; saveCfg(); applyVol(); };
-    l.append(r); box.append(l);
+    const l = document.createElement('label'), n = document.createElement('span'), r = document.createElement('input');
+    r.type = 'range'; r.min = 0; r.max = 300; r.value = PV[p.name] ?? 100;
+    const upd = () => n.textContent = p.name + ' — ' + r.value + '٪'; upd();
+    r.oninput = () => { PV[p.name] = +r.value; saveCfg(); applyVol(); upd(); };
+    l.append(n, r); box.append(l);
   });
   if (!box.children.length) box.textContent = 'هنوز کسی در روم نیست.';
 }
-$('#gear').onclick = () => { $('#set').hidden = !$('#set').hidden; if (!$('#set').hidden) buildPV(); };
-$('#sv').value = CFG.voice; $('#sa').value = CFG.amb; $('#sb').checked = CFG.bg;
-$('#sv').oninput = () => { CFG.voice = +$('#sv').value; saveCfg(); applyVol(); };
-$('#sa').oninput = () => { CFG.amb = +$('#sa').value; saveCfg(); };
+const lab = () => { $('#svv').textContent = CFG.voice + '٪'; $('#sav').textContent = CFG.amb + '٪'; };
+document.querySelectorAll('.gearbtn').forEach(b => b.onclick = () => { lab(); $('#set').hidden = false; buildPV(); });
+$('#sc').onclick = () => $('#set').hidden = true;
+$('#set').onclick = e => { if (e.target.id === 'set') e.target.hidden = true; };
+$('#sv').value = CFG.voice; $('#sa').value = CFG.amb; $('#sb').checked = CFG.bg; $('#sr').checked = CFG.raw; lab();
+$('#sv').oninput = () => { CFG.voice = +$('#sv').value; saveCfg(); applyVol(); lab(); };
+$('#sa').oninput = () => { CFG.amb = +$('#sa').value; saveCfg(); lab(); };
 $('#sa').onchange = () => sfx('msg');
+$('#sr').onchange = () => { CFG.raw = $('#sr').checked; saveCfg(); };
 $('#sb').onchange = () => { CFG.bg = $('#sb').checked; saveCfg(); document.body.classList.toggle('noBg', !CFG.bg); };
 document.body.classList.toggle('noBg', !CFG.bg);
 $('#ask').onchange = () => { cur.ask = $('#ask').checked; socket.emit('ask', { id: cur.id, on: cur.ask }); };
