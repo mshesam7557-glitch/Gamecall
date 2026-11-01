@@ -2,7 +2,8 @@
 <html lang="fa" dir="rtl">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#15122a"><link rel="manifest" href="/manifest.json"><link rel="icon" href="/icon.svg">
 <title>گیم‌کال</title>
 <style>
 @font-face{font-family:Vazirmatn;font-weight:400;font-display:swap;src:url(/fonts/Vazirmatn-Regular.woff2) format('woff2')}
@@ -105,6 +106,34 @@ input[type=range]{padding:0;border:0;background:none;accent-color:var(--ac)}
 .sheet input[type=range]{height:22px}
 select{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px 10px;color:inherit;font:inherit}
 @media(max-width:640px){.row{grid-template-columns:1fr!important}}
+:root{--bg:#120f26;--panel:#1c1838;--panel2:#282350}
+body{font-size:15px;-webkit-tap-highlight-color:transparent}
+h1{background:linear-gradient(90deg,#fff,#a99dff);-webkit-background-clip:text;background-clip:text;color:transparent;font-size:32px}
+.card{background:linear-gradient(180deg,#252047,#1c1838);box-shadow:0 12px 40px #0006;border-radius:20px}
+button{border-radius:12px;transition:transform .12s,filter .15s,background .15s}
+button:active{transform:scale(.96)}
+button:not(.ghost):not(.danger){background:linear-gradient(135deg,#8a7bff,#6a5cf0);box-shadow:0 4px 14px #6a5cf044}
+button:disabled{opacity:.45;filter:grayscale(.6)}
+.room{display:flex;align-items:center;gap:14px;background:var(--panel2);border:1px solid #ffffff10;border-radius:16px;padding:14px;transition:transform .15s,border-color .15s}
+.room:hover{transform:translateY(-2px);border-color:var(--ac)}
+.room.full{opacity:.7}
+.ric{width:46px;height:46px;border-radius:14px;display:grid;place-items:center;font-weight:800;font-size:20px;background:linear-gradient(135deg,#8a7bff,#5a49e8);flex:none}
+.rinf{flex:1;min-width:0;display:grid;gap:6px}
+.rinf b{font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tags{display:flex;flex-wrap:wrap;gap:6px}
+.tag{font-size:12px;background:#ffffff12;border-radius:20px;padding:2px 10px;color:var(--mut)}
+.tag.green{background:#3ddc9722;color:var(--ok)}.tag.red{background:#ff5f7e22;color:var(--bad)}
+.ctl{background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:8px;gap:6px;align-self:center;max-width:100%}
+.ctl button{display:grid;place-items:center;gap:2px;min-width:74px;padding:8px 10px;font-size:11px;background:var(--panel2);box-shadow:none}
+.ctl button i{font-style:normal;font-size:21px}
+.ctl button.on{background:linear-gradient(135deg,#8a7bff,#6a5cf0)}
+.ctl button.off,.ctl button.danger{background:var(--bad)}
+.tile{border-radius:18px}
+.fs{position:absolute;top:10px;right:10px;padding:4px 9px;background:#000a!important;font-size:14px;opacity:.75;box-shadow:none!important}
+#room{height:100dvh;padding:14px 14px calc(14px + env(safe-area-inset-bottom))}
+.screen{padding-bottom:calc(20px + env(safe-area-inset-bottom))}
+@media(max-width:800px){#chat{position:fixed;inset:auto 0 0 0;width:auto;height:58dvh;z-index:6;border-radius:20px 20px 0 0;box-shadow:0 -10px 40px #000a}.grid{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))!important}.ctl{width:100%;justify-content:space-between}.ctl button{min-width:0;flex:1;padding:8px 2px}.ctl button span{font-size:10px}}
+@media(max-width:560px){.room{flex-wrap:wrap}.room .pill{width:100%}.room .pill button{flex:1}.modal{align-items:end;padding:0}.sheet{max-width:none!important;border-radius:20px 20px 0 0;max-height:88dvh}.top{flex-wrap:wrap}}
 </style>
 </head>
 <body>
@@ -146,17 +175,18 @@ select{width:100%;background:var(--bg);border:1px solid var(--line);border-radiu
 <div id="room" hidden>
   <div class="rbar">
     <div><b id="rt"></b> <span class="mut" id="rc"></span></div>
-    <button class="danger" id="del" hidden>حذف روم</button>
+    <div class="pill"><button class="ghost" id="rcopy">📋 کپی نام روم</button><button class="danger" id="del" hidden>حذف روم</button></div>
   </div>
   <div class="main"><div class="grid" id="grid"></div>
   <aside id="chat"><div class="chead">چت روم<small>⚠️ پیام‌ها بعد از ۱۵ دقیقه خودکار پاک می‌شوند.</small></div><div id="msgs"></div><div class="cin"><input id="ci" placeholder="پیام..." maxlength="500"><button id="cs">ارسال</button></div></aside></div>
   <div class="ctl">
-    <button id="bm" class="on">میکروفون</button>
-    <button id="bc">دوربین</button>
-    <button id="bs">اشتراک صفحه</button>
-    <button class="gearbtn">⚙️ تنظیمات</button>
-    <button id="bch">چت</button>
-    <button id="bl" class="danger">خروج از روم</button>
+    <button id="bm" class="on"><i>🎙️</i><span>میکروفون</span></button>
+    <button id="bd"><i>🎧</i><span>گوش‌دادن</span></button>
+    <button id="bc"><i>📷</i><span>دوربین</span></button>
+    <button id="bs"><i>🖥️</i><span>اشتراک صفحه</span></button>
+    <button id="bch"><i>💬</i><span>چت</span></button>
+    <button class="gearbtn"><i>⚙️</i><span>تنظیمات</span></button>
+    <button id="bl" class="danger"><i>📞</i><span>خروج</span></button>
   </div>
 </div>
 <div class="modal" id="modal" hidden>
@@ -176,7 +206,7 @@ select{width:100%;background:var(--bg);border:1px solid var(--line);border-radiu
 <div id="set" class="modal" hidden><div class="card sheet">
   <div class="top"><h2 style="margin:0">⚙️ تنظیمات</h2><button class="ghost" id="sc">بستن</button></div>
   <section><h3>🔊 صدا</h3>
-    <label><span>صدای افراد روم <b id="svv"></b></span><input type="range" id="sv" min="0" max="300"><small>بلندی صدای دوستانت. بالای ۱۰۰٪ صدا را تقویت می‌کند.</small></label>
+    <label><span>صدای افراد روم <b id="svv"></b></span><input type="range" id="sv" min="0" max="400"><small>بلندی صدای دوستانت. بالای ۱۰۰٪ صدا را تقویت می‌کند.</small></label>
     <label><span>صدای محیط <b id="sav"></b></span><input type="range" id="sa" min="0" max="100"><small>افکت‌های سایت: کلیک دکمه‌ها، ورود و خروج افراد، پیام جدید و ...</small></label>
     <label class="chk"><input type="checkbox" id="sr"><span>حالت صدای بلندتر برای موبایل<small>حذف اکو و نویز را خاموش می‌کند. با هدفون استفاده کن. از ورود بعدی به روم اعمال می‌شود.</small></span></label>
   </section>
@@ -184,6 +214,7 @@ select{width:100%;background:var(--bg);border:1px solid var(--line);border-radiu
     <div class="mut">صدای هر نفر (فقط برای خودت اعمال می‌شود)</div><div id="pvs" class="stack"></div>
     <label class="chk" id="askw" hidden><input type="checkbox" id="ask"><span>ورود با اجازه<small>کنار دکمه‌ی ورود در لیست، «ورود با اجازه» هم نمایش داده می‌شود و درخواست‌ها به تو می‌رسد.</small></span></label>
   </section>
+  <section><h3>🖥️ اشتراک صفحه</h3><label><span>کیفیت</span><select id="sq"><option value="0">۷۲۰p • ۳۰ فریم (سبک)</option><option value="1">۱۰۸۰p • ۳۰ فریم</option><option value="2">۱۰۸۰p • ۶۰ فریم (سنگین)</option></select><small>کیفیت بالاتر آپلود بیشتری می‌خواهد. اگر بازی یا اینترنتت افت کرد، پایین‌ترش کن.</small></label></section>
     <a class="btn" href="https://reymit.ir/ms_hesam_donate" target="_blank" rel="noopener">❤️ حمایت مالی</a>
 </div></div>
 <div id="kn" class="modal" hidden><div class="card stack"><div id="kt"></div><div class="row2" style="display:flex;gap:10px"><button id="ky">بله</button><button id="kno" class="danger">نه</button></div></div></div>
@@ -252,7 +283,7 @@ async function start() {
   socket.on('state', ({ id, mic }) => { micState[id] = mic; for (const k in tiles) updTile(k); });
   socket.on('peer-left', id => { sfx('leave'); closePeer(id); });
   socket.on('kicked', () => { toast('صاحب روم تو را از روم اخراج کرد.'); sfx('no'); leaveLocal(); });
-  socket.on('chat', m => { addMsg(m); if (m.user !== me) sfx('msg'); });
+  socket.on('chat', m => { addMsg(m); if (m.user !== me) { sfx('msg'); if ($('#chat').classList.contains('hide')) { unread++; chBtn(); } } });
   socket.on('chat-edit', ({ id, text }) => { const e = document.querySelector('#m' + id + ' .mt'); if (e) e.textContent = text; });
   socket.on('chat-del', id => { const e = document.getElementById('m' + id); if (e) e.remove(); });
   socket.on('knock', k => { knockQ.push(k); sfx('ask'); showKnock(); });
@@ -267,18 +298,23 @@ function draw() {
   if (found && q && found.name.toLowerCase() === q && !l.some(x => x.id === found.id)) l.push(found);
   const box = $('#list'); box.innerHTML = '';
   if (!l.length) { box.innerHTML = '<div class="empty">' + (rooms.length ? 'رومی با این نام پیدا نشد.' : 'هنوز رومی ساخته نشده. اولین روم را بساز.') + '</div>'; return; }
+  l.sort((x, y) => (y.owner === me) - (x.owner === me) || y.count - x.count);
   l.forEach(r => {
-    const d = document.createElement('div'); d.className = 'room';
-    const b = document.createElement('b'); b.textContent = (r.hidden ? '🙈 ' : '') + (r.locked ? '🔒 ' : '') + r.name;
-    const m = document.createElement('div'); m.className = 'meta';
-    m.innerHTML = '<span class="pill"><span class="dot"></span><span></span></span><span></span>';
-    m.children[0].children[1].textContent = r.count + '/' + (r.max || 6) + ' نفر'; m.children[1].textContent = 'سازنده: ' + r.owner;
-    const j = document.createElement('button'); j.textContent = 'ورود';
-    j.onclick = () => join(r);
-    const bt = document.createElement('div'); bt.className = 'pill'; bt.append(j);
+    const mx = r.max || 6, full = r.count >= mx;
+    const d = document.createElement('div'); d.className = 'room' + (full ? ' full' : '');
+    const ic = document.createElement('div'); ic.className = 'ric'; ic.textContent = ([...r.name][0] || '?').toUpperCase();
+    const info = document.createElement('div'); info.className = 'rinf';
+    const b = document.createElement('b'); b.textContent = r.name;
+    const tags = document.createElement('div'); tags.className = 'tags';
+    const tg = (t, c) => { const x = document.createElement('span'); x.className = 'tag ' + (c || ''); x.textContent = t; tags.append(x); };
+    tg('👥 ' + r.count + '/' + mx, full ? 'red' : 'green'); tg('👑 ' + r.owner);
+    if (r.locked) tg('🔒 رمزدار'); if (r.hidden) tg('🙈 شخصی'); if (r.ask) tg('🔔 با اجازه');
+    info.append(b, tags);
+    const bt = document.createElement('div'); bt.className = 'pill';
+    const j = document.createElement('button'); j.textContent = full ? 'پر است' : 'ورود'; j.disabled = full && r.owner !== me; j.onclick = () => join(r); bt.append(j);
     if (r.ask) { const k = document.createElement('button'); k.className = 'ghost'; k.textContent = 'ورود با اجازه';
       k.onclick = async () => { const x = await emit('knock', r.id); toast(x.error || 'درخواست برای صاحب روم ارسال شد؛ منتظر پاسخ بمان.'); }; bt.append(k); }
-    const left = document.createElement('div'); left.append(b); d.append(left, m, bt); box.append(d);
+    d.append(ic, info, bt); box.append(d);
   });
 }
 $('#q').oninput = () => { draw(); clearTimeout(ft); ft = setTimeout(findRoom, 300); };
@@ -304,7 +340,7 @@ async function join(r, pw) {
   if (res.error) return toast(res.error);
   cur = { id: r.id, owner: res.owner, ask: res.ask };
   $('#rt').textContent = res.name; $('#del').hidden = res.owner !== me;
-  show('room'); $('#grid').innerHTML = ''; tiles = {}; (res.msgs || []).forEach(addMsg);
+  show('room'); $('#grid').innerHTML = ''; tiles = {}; (res.msgs || []).forEach(addMsg); unread = 0; chBtn(); $('#chat').classList.toggle('hide', innerWidth <= 800);
   addTile('me-cam', local, me + ' (تو)', true, myAvatar, 'me');
   res.peers.forEach(p => { micState[p.id] = p.mic !== false; getPeer(p.id, p.name, p.avatar); });
   syncUI(); sendState();
@@ -312,10 +348,10 @@ async function join(r, pw) {
 function syncUI() {
   if (!$('#set').hidden) buildPV();
   const mic = local.getAudioTracks()[0], cam = local.getVideoTracks()[0];
-  $('#bm').textContent = mic && mic.enabled ? 'میکروفون روشن' : 'میکروفون خاموش';
+  setBtn('#bm', mic && mic.enabled ? '🎙️' : '🔇', mic && mic.enabled ? 'میکروفون' : 'بی‌صدا');
   $('#bm').className = mic && mic.enabled ? 'on' : 'off';
-  $('#bc').className = cam ? 'on' : ''; $('#bc').textContent = cam ? 'خاموش‌کردن دوربین' : 'روشن‌کردن دوربین';
-  $('#bs').className = screen ? 'on' : ''; $('#bs').textContent = screen ? 'توقف اشتراک' : 'اشتراک صفحه';
+  $('#bc').className = cam ? 'on' : ''; setBtn('#bc', '📷', cam ? 'خاموش‌کردن' : 'دوربین');
+  $('#bs').className = screen ? 'on' : ''; setBtn('#bs', '🖥️', screen ? 'توقف' : 'اشتراک صفحه');
   $('#rc').textContent = (Object.keys(peers).length + 1) + ' نفر در روم';
   for (const k in tiles) updTile(k);
 }
@@ -327,6 +363,9 @@ function addTile(key, stream, label, mute, avatar, pid) {
   const nm = document.createElement('div'); nm.className = 'nm';
   const mic = document.createElement('span'); nm.append(mic, label);
   el.append(av, v, nm); $('#grid').append(el);
+  const fs = document.createElement('button'); fs.className = 'fs'; fs.textContent = '⛶'; fs.title = 'تمام‌صفحه';
+  fs.onclick = () => { if (el.requestFullscreen) el.requestFullscreen(); else if (v.webkitEnterFullscreen) v.webkitEnterFullscreen(); };
+  el.append(fs); el.ondblclick = fs.onclick;
   if (cur && cur.owner === me && pid && pid !== 'me' && pid !== 'me-screen') {
     const kb = document.createElement('button'); kb.className = 'kick'; kb.textContent = '✖ اخراج';
     kb.onclick = () => { if (confirm('«' + (peers[pid] ? peers[pid].name : '') + '» از روم اخراج شود؟')) socket.emit('kick', pid); };
@@ -424,7 +463,7 @@ $('#bc').onclick = async () => {
 $('#bs').onclick = async () => {
   if (screen) return stopScreen();
   try {
-    screen = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: 30 }, audio: true });
+    screen = await navigator.mediaDevices.getDisplayMedia({ video: SQ[CFG.sq || 0], audio: true });
   } catch { return; }
   screen.getTracks().forEach(t => addToAll(t, screen));
   screen.getVideoTracks()[0].onended = stopScreen;
@@ -490,7 +529,7 @@ $('#psave').onclick = async () => {
 };
 
 /* ---------- Settings, sounds, chat, join-permission ---------- */
-const CFG = Object.assign({ voice: 100, amb: 70, bg: true, raw: false }, JSON.parse(localStorage.gcfg || '{}'));
+const CFG = Object.assign({ voice: matchMedia('(pointer:coarse)').matches ? 200 : 100, amb: 70, bg: true, raw: false, sq: 0 }, JSON.parse(localStorage.gcfg || '{}'));
 const PV = JSON.parse(localStorage.gpv || '{}');
 const saveCfg = () => { localStorage.gcfg = JSON.stringify(CFG); localStorage.gpv = JSON.stringify(PV); };
 let actx;
@@ -510,6 +549,10 @@ function sfx(n) {
   } catch {}
 }
 document.addEventListener('click', e => { if (e.target.closest('button,a.btn')) sfx('click'); });
+let deaf = false, unread = 0;
+const SQ = [{ width: 1280, height: 720, frameRate: 30 }, { width: 1920, height: 1080, frameRate: 30 }, { width: 1920, height: 1080, frameRate: 60 }];
+const setBtn = (id, i, t) => { $(id).innerHTML = '<i>' + i + '</i><span>' + t + '</span>'; };
+const chBtn = () => setBtn('#bch', '💬', 'چت' + (unread ? ' (' + unread + ')' : ''));
 const IOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
 let localRaw;
 function routeAudio(t) {
@@ -517,7 +560,8 @@ function routeAudio(t) {
   try {
     actx = actx || new AudioContext();
     const g = actx.createGain();
-    actx.createMediaStreamSource(new MediaStream(t.stream.getAudioTracks())).connect(g).connect(actx.destination);
+    const c = actx.createDynamicsCompressor(); c.threshold.value = -24; c.knee.value = 20; c.ratio.value = 6; c.attack.value = .003; c.release.value = .2;
+    actx.createMediaStreamSource(new MediaStream(t.stream.getAudioTracks())).connect(g).connect(c).connect(actx.destination);
     t.gain = g; t.v.muted = true;
   } catch {}
 }
@@ -525,7 +569,7 @@ function applyVol() {
   for (const k in tiles) {
     const t = tiles[k], p = peers[t.pid]; if (!p) continue;
     if (!t.gain && t.stream.getAudioTracks().length) routeAudio(t);
-    const v = CFG.voice / 100 * (PV[p.name] ?? 100) / 100;
+    const v = deaf ? 0 : CFG.voice / 100 * (PV[p.name] ?? 100) / 100;
     if (t.gain) t.gain.gain.value = v; else t.v.volume = Math.min(1, v);
   }
 }
@@ -536,7 +580,7 @@ function buildPV() {
   const box = $('#pvs'); box.innerHTML = '';
   Object.values(peers).forEach(p => {
     const l = document.createElement('label'), n = document.createElement('span'), r = document.createElement('input');
-    r.type = 'range'; r.min = 0; r.max = 300; r.value = PV[p.name] ?? 100;
+    r.type = 'range'; r.min = 0; r.max = 400; r.value = PV[p.name] ?? 100;
     const upd = () => n.textContent = p.name + ' — ' + r.value + '٪'; upd();
     r.oninput = () => { PV[p.name] = +r.value; saveCfg(); applyVol(); upd(); };
     l.append(n, r); box.append(l);
@@ -551,6 +595,9 @@ $('#sv').value = CFG.voice; $('#sa').value = CFG.amb; $('#sr').checked = CFG.raw
 $('#sv').oninput = () => { CFG.voice = +$('#sv').value; saveCfg(); applyVol(); lab(); };
 $('#sa').oninput = () => { CFG.amb = +$('#sa').value; saveCfg(); lab(); };
 $('#sa').onchange = () => sfx('msg');
+$('#sq').value = CFG.sq || 0; $('#sq').onchange = () => { CFG.sq = +$('#sq').value; saveCfg(); };
+$('#bd').onclick = () => { deaf = !deaf; $('#bd').className = deaf ? 'off' : ''; applyVol(); sfx(deaf ? 'mute' : 'unmute'); };
+$('#rcopy').onclick = () => { try { navigator.clipboard.writeText($('#rt').textContent); toast('نام روم کپی شد.'); } catch { toast($('#rt').textContent); } };
 $('#sr').onchange = () => { CFG.raw = $('#sr').checked; saveCfg(); };
 $('#ask').onchange = () => { cur.ask = $('#ask').checked; socket.emit('ask', { id: cur.id, on: cur.ask }); };
 let mp; addEventListener('mousemove', e => {
@@ -579,7 +626,7 @@ function addMsg(m) {
 const sendChat = () => { const v = $('#ci').value.trim(); if (v) { socket.emit('chat', v); $('#ci').value = ''; } };
 $('#cs').onclick = sendChat;
 $('#ci').addEventListener('keydown', e => { if (e.key === 'Enter') sendChat(); });
-$('#bch').onclick = () => $('#chat').classList.toggle('hide');
+$('#bch').onclick = () => { $('#chat').classList.toggle('hide'); unread = 0; chBtn(); };
 
 /* join with permission */
 let knockQ = [], knockCur = null;
