@@ -100,9 +100,10 @@ app.get('/api/ice', (_, res) => {
 
 // ---- Rooms (in memory) ----
 const rooms = new Map();
-const pub = () => [...rooms.values()].map(r => ({ id: r.id, name: r.name, locked: !!r.hash, count: r.members.size, owner: r.owner, ask: !!r.ask, max: r.max }));
+const pubRoom = r => ({ hidden: !!r.hidden, id: r.id, name: r.name, locked: !!r.hash, count: r.members.size, owner: r.owner, ask: !!r.ask, max: r.max });
+const pub = u => [...rooms.values()].filter(r => !r.hidden || r.owner === u).map(pubRoom);
 const avOf = n => (users[String(n).toLowerCase()] || {}).avatar || '';
-const push = () => io.emit('rooms', pub());
+const push = () => { for (const x of io.sockets.sockets.values()) x.emit('rooms', pub(x.user)); };
 
 io.use((s, next) => {
   try {
@@ -120,22 +121,23 @@ io.on('connection', s => {
     s.roomId = null; push();
   };
 
-  s.on('rooms', (...a) => { const ack = a.find(x => typeof x === 'function'); if (ack) ack(pub()); });
+  s.on('rooms', (...a) => { const ack = a.find(x => typeof x === 'function'); if (ack) ack(pub(s.user)); });
 
-  s.on('create', ({ name, password, max }, ack) => {
+  s.on('create', ({ name, password, max, hidden }, ack) => {
     name = String(name || '').trim().slice(0, 30);
     if (name.length < 2) return ack({ error: 'نام روم باید حداقل ۲ حرف باشد.' });
     if ([...rooms.values()].some(r => r.name.toLowerCase() === name.toLowerCase())) return ack({ error: 'روم دیگری با این نام وجود دارد.' });
     const id = Math.random().toString(36).slice(2, 9);
-    rooms.set(id, { id, name, owner: s.user, hash: password ? bcrypt.hashSync(String(password), 8) : null, members: new Map(), msgs: [], max: Math.min(10, Math.max(2, parseInt(max) || 6)) });
+    rooms.set(id, { id, name, owner: s.user, hash: password ? bcrypt.hashSync(String(password), 8) : null, members: new Map(), msgs: [], max: Math.min(10, Math.max(2, parseInt(max) || 6)), hidden: !!hidden });
     push(); ack({ ok: true, id });
   });
 
   s.on('join', ({ id, password }, ack) => {
     const r = rooms.get(id);
     if (!r) return ack({ error: 'این روم دیگر وجود ندارد.' });
+    if (r.banned && r.banned.has(s.user)) return ack({ error: 'تو از این روم اخراج شده‌ای.' });
     const knocked = !!(r.allowed && r.allowed.delete(s.id));
-    if (r.hash && !knocked && !bcrypt.compareSync(String(password || ''), r.hash)) return ack({ error: 'رمز روم اشتباه است.' });
+    if (r.hash && r.owner !== s.user && !knocked && !bcrypt.compareSync(String(password || ''), r.hash)) return ack({ error: 'رمز روم اشتباه است.' });
     if (r.members.size >= r.max && !r.members.has(s.id)) return ack({ error: 'ظرفیت روم پر است.' });
     if (s.roomId) leave();
     const av = n => (users[n.toLowerCase()] || {}).avatar || '';
@@ -173,6 +175,19 @@ io.on('connection', s => {
     const r = ownRoom(rid); if (!r) return;
     if (ok) (r.allowed = r.allowed || new Set()).add(sid);
     io.to(sid).emit('knock-result', { rid, ok: !!ok, room: r.name });
+  });
+  s.on('find', (q, ack) => {
+    if (typeof ack !== 'function') return;
+    q = String(q || '').trim().toLowerCase();
+    const r = q && [...rooms.values()].find(x => x.hidden && x.name.toLowerCase() === q);
+    ack({ room: r ? pubRoom(r) : null });
+  });
+  s.on('kick', sid => {
+    const r = ownRoom(s.roomId), x = io.sockets.sockets.get(sid);
+    if (!r || !x || sid === s.id || !r.members.has(sid)) return;
+    (r.banned = r.banned || new Set()).add(x.user);
+    r.members.delete(sid); x.emit('kicked'); x.leave(r.id); x.roomId = null;
+    io.to(r.id).emit('peer-left', sid); push();
   });
   s.on('leave', leave);
 
