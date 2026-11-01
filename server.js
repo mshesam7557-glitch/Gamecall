@@ -100,7 +100,7 @@ app.get('/api/ice', (_, res) => {
 
 // ---- Rooms (in memory) ----
 const rooms = new Map();
-const pub = () => [...rooms.values()].map(r => ({ id: r.id, name: r.name, locked: !!r.hash, count: r.members.size, owner: r.owner }));
+const pub = () => [...rooms.values()].map(r => ({ id: r.id, name: r.name, locked: !!r.hash, count: r.members.size, owner: r.owner, ask: !!r.ask }));
 const push = () => io.emit('rooms', pub());
 
 io.use((s, next) => {
@@ -126,25 +126,53 @@ io.on('connection', s => {
     if (name.length < 2) return ack({ error: 'نام روم باید حداقل ۲ حرف باشد.' });
     if ([...rooms.values()].some(r => r.name.toLowerCase() === name.toLowerCase())) return ack({ error: 'روم دیگری با این نام وجود دارد.' });
     const id = Math.random().toString(36).slice(2, 9);
-    rooms.set(id, { id, name, owner: s.user, hash: password ? bcrypt.hashSync(String(password), 8) : null, members: new Map() });
+    rooms.set(id, { id, name, owner: s.user, hash: password ? bcrypt.hashSync(String(password), 8) : null, members: new Map(), msgs: [] });
     push(); ack({ ok: true, id });
   });
 
   s.on('join', ({ id, password }, ack) => {
     const r = rooms.get(id);
     if (!r) return ack({ error: 'این روم دیگر وجود ندارد.' });
-    if (r.hash && !bcrypt.compareSync(String(password || ''), r.hash)) return ack({ error: 'رمز روم اشتباه است.' });
+    const knocked = !!(r.allowed && r.allowed.delete(s.id));
+    if (r.hash && !knocked && !bcrypt.compareSync(String(password || ''), r.hash)) return ack({ error: 'رمز روم اشتباه است.' });
     if (r.members.size >= MAX_MEMBERS && !r.members.has(s.id)) return ack({ error: 'ظرفیت روم پر است.' });
     if (s.roomId) leave();
     const av = n => (users[n.toLowerCase()] || {}).avatar || '';
     const peers = [...r.members].map(([sid, name]) => ({ id: sid, name, avatar: av(name), mic: (io.sockets.sockets.get(sid) || {}).mic !== false }));
     r.members.set(s.id, s.user); s.roomId = id; s.mic = true; s.join(id);
     s.to(id).emit('peer-joined', { id: s.id, name: s.user, avatar: av(s.user), mic: true });
-    push(); ack({ ok: true, name: r.name, owner: r.owner, peers });
+    push(); ack({ ok: true, name: r.name, owner: r.owner, peers, ask: !!r.ask, msgs: r.msgs });
   });
 
   s.on('signal', ({ to, data }) => io.to(to).emit('signal', { from: s.id, data }));
   s.on('state', d => { s.mic = !!(d && d.mic); if (s.roomId) s.to(s.roomId).emit('state', { id: s.id, mic: s.mic }); });
+  const ownRoom = id => { const r = rooms.get(id); return r && r.owner === s.user ? r : null; };
+  s.on('chat', t => {
+    const r = rooms.get(s.roomId); t = String(t || '').trim().slice(0, 500); if (!r || !t) return;
+    const m = { id: Math.random().toString(36).slice(2, 9), user: s.user, avatar: avOf(s.user), text: t, ts: Date.now() };
+    r.msgs.push(m); if (r.msgs.length > 200) r.msgs.shift(); io.to(r.id).emit('chat', m);
+  });
+  s.on('chat-edit', ({ id, text } = {}) => {
+    const r = rooms.get(s.roomId), m = r && r.msgs.find(x => x.id === id); text = String(text || '').trim().slice(0, 500);
+    if (m && m.user === s.user && text) { m.text = text; io.to(r.id).emit('chat-edit', { id, text }); }
+  });
+  s.on('chat-del', id => {
+    const r = rooms.get(s.roomId), i = r ? r.msgs.findIndex(x => x.id === id && x.user === s.user) : -1;
+    if (i >= 0) { r.msgs.splice(i, 1); io.to(r.id).emit('chat-del', id); }
+  });
+  s.on('ask', ({ id, on } = {}) => { const r = ownRoom(id); if (r) { r.ask = !!on; push(); } });
+  s.on('knock', (id, ack) => {
+    const r = rooms.get(id); if (typeof ack !== 'function') return;
+    if (!r || !r.ask) return ack({ error: 'این روم ورود با اجازه ندارد.' });
+    let sent = 0;
+    for (const x of io.sockets.sockets.values()) if (x.user === r.owner) { x.emit('knock', { rid: r.id, room: r.name, from: s.user, sid: s.id }); sent++; }
+    ack(sent ? { ok: true } : { error: 'صاحب روم الان آنلاین نیست.' });
+  });
+  s.on('knock-reply', ({ rid, sid, ok } = {}) => {
+    const r = ownRoom(rid); if (!r) return;
+    if (ok) (r.allowed = r.allowed || new Set()).add(sid);
+    io.to(sid).emit('knock-result', { rid, ok: !!ok, room: r.name });
+  });
   s.on('leave', leave);
 
   s.on('delete', (id, ack) => {
@@ -157,6 +185,12 @@ io.on('connection', s => {
 
   s.on('disconnect', leave);
 });
+
+// delete chat messages older than 15 minutes
+setInterval(() => {
+  const lim = Date.now() - 15 * 60000;
+  rooms.forEach(r => { const old = r.msgs.filter(m => m.ts < lim); if (old.length) { r.msgs = r.msgs.filter(m => m.ts >= lim); old.forEach(m => io.to(r.id).emit('chat-del', m.id)); } });
+}, 15000);
 
 process.on('uncaughtException', e => console.error('uncaught', e));
 process.on('unhandledRejection', e => console.error('unhandled', e));
