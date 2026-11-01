@@ -94,6 +94,7 @@ input[type=range]{padding:0;border:0;background:none;accent-color:var(--ac)}
 .cin{display:flex;gap:6px;padding:8px}
 .cin button{padding:8px 12px}
 @media(max-width:800px){.main{flex-direction:column}#chat{width:auto;height:38%}}
+.kick{position:absolute;top:10px;left:10px;padding:5px 10px;font-size:12px;background:#c2314f;z-index:2}
 .sheet{max-width:440px;max-height:90vh;overflow:auto;display:grid;gap:18px}
 .sheet section{display:grid;gap:14px;padding-top:16px;border-top:1px solid var(--line)}
 .sheet h3{margin:0;font-size:16px}
@@ -132,6 +133,7 @@ select{width:100%;background:var(--bg);border:1px solid var(--line);border-radiu
         <select id="rmx" title="حداکثر ظرفیت روم"><option value="2">ظرفیت: 2 نفر</option><option value="3">ظرفیت: 3 نفر</option><option value="4">ظرفیت: 4 نفر</option><option value="5">ظرفیت: 5 نفر</option><option value="6" selected>ظرفیت: 6 نفر</option><option value="7">ظرفیت: 7 نفر</option><option value="8">ظرفیت: 8 نفر</option><option value="9">ظرفیت: 9 نفر</option><option value="10">ظرفیت: 10 نفر</option></select>
         <button id="mk">ساخت روم</button>
       </div>
+      <label class="chk" style="margin-top:12px"><input type="checkbox" id="rhid"><span>روم شخصی <small style="display:block;color:var(--mut);font-size:12px">در لیست نمایش داده نمی‌شود و فقط با جستجوی دقیق اسمش پیدا می‌شود.</small></span></label>
     </div>
     <div class="card" style="max-width:none">
       <h2>روم‌ها</h2>
@@ -182,10 +184,7 @@ select{width:100%;background:var(--bg);border:1px solid var(--line);border-radiu
     <div class="mut">صدای هر نفر (فقط برای خودت اعمال می‌شود)</div><div id="pvs" class="stack"></div>
     <label class="chk" id="askw" hidden><input type="checkbox" id="ask"><span>ورود با اجازه<small>کنار دکمه‌ی ورود در لیست، «ورود با اجازه» هم نمایش داده می‌شود و درخواست‌ها به تو می‌رسد.</small></span></label>
   </section>
-  <section><h3>🎨 ظاهر</h3>
-    <label class="chk"><input type="checkbox" id="sb"><span>پس‌زمینه‌ی متحرک<small>داخل روم برای سبک ماندن بازی خودکار خاموش است.</small></span></label>
-  </section>
-  <a class="btn" href="https://reymit.ir/ms_hesam_donate" target="_blank" rel="noopener">❤️ حمایت مالی</a>
+    <a class="btn" href="https://reymit.ir/ms_hesam_donate" target="_blank" rel="noopener">❤️ حمایت مالی</a>
 </div></div>
 <div id="kn" class="modal" hidden><div class="card stack"><div id="kt"></div><div class="row2" style="display:flex;gap:10px"><button id="ky">بله</button><button id="kno" class="danger">نه</button></div></div></div>
 <div id="toast" hidden></div>
@@ -252,6 +251,7 @@ async function start() {
   socket.on('peer-joined', ({ id, name, avatar, mic }) => { micState[id] = mic !== false; sfx('join'); getPeer(id, name, avatar); });
   socket.on('state', ({ id, mic }) => { micState[id] = mic; for (const k in tiles) updTile(k); });
   socket.on('peer-left', id => { sfx('leave'); closePeer(id); });
+  socket.on('kicked', () => { toast('صاحب روم تو را از روم اخراج کرد.'); sfx('no'); leaveLocal(); });
   socket.on('chat', m => { addMsg(m); if (m.user !== me) sfx('msg'); });
   socket.on('chat-edit', ({ id, text }) => { const e = document.querySelector('#m' + id + ' .mt'); if (e) e.textContent = text; });
   socket.on('chat-del', id => { const e = document.getElementById('m' + id); if (e) e.remove(); });
@@ -264,11 +264,12 @@ async function start() {
 function draw() {
   const q = $('#q').value.trim().toLowerCase();
   const l = rooms.filter(r => r.name.toLowerCase().includes(q));
+  if (found && q && found.name.toLowerCase() === q && !l.some(x => x.id === found.id)) l.push(found);
   const box = $('#list'); box.innerHTML = '';
   if (!l.length) { box.innerHTML = '<div class="empty">' + (rooms.length ? 'رومی با این نام پیدا نشد.' : 'هنوز رومی ساخته نشده. اولین روم را بساز.') + '</div>'; return; }
   l.forEach(r => {
     const d = document.createElement('div'); d.className = 'room';
-    const b = document.createElement('b'); b.textContent = (r.locked ? '🔒 ' : '') + r.name;
+    const b = document.createElement('b'); b.textContent = (r.hidden ? '🙈 ' : '') + (r.locked ? '🔒 ' : '') + r.name;
     const m = document.createElement('div'); m.className = 'meta';
     m.innerHTML = '<span class="pill"><span class="dot"></span><span></span></span><span></span>';
     m.children[0].children[1].textContent = r.count + '/' + (r.max || 6) + ' نفر'; m.children[1].textContent = 'سازنده: ' + r.owner;
@@ -280,18 +281,18 @@ function draw() {
     const left = document.createElement('div'); left.append(b); d.append(left, m, bt); box.append(d);
   });
 }
-$('#q').oninput = draw;
+$('#q').oninput = () => { draw(); clearTimeout(ft); ft = setTimeout(findRoom, 300); };
 $('#mk').onclick = async () => {
   const name = $('#rn').value, password = $('#rp').value;
-  const r = await emit('create', { name, password, max: +$('#rmx').value });
+  const r = await emit('create', { name, password, max: +$('#rmx').value, hidden: $('#rhid').checked });
   if (r.error) return toast(r.error);
-  $('#rn').value = $('#rp').value = '';
+  $('#rn').value = $('#rp').value = ''; $('#rhid').checked = false;
   join({ id: r.id, name, owner: me }, password);
 };
 
 /* ---------- Room ---------- */
 async function join(r, pw) {
-  if (r.locked && pw === undefined) { pw = prompt('رمز روم را وارد کن'); if (pw === null) return; }
+  if (r.locked && r.owner !== me && pw === undefined) { pw = prompt('رمز روم را وارد کن'); if (pw === null) return; }
   if (local.getAudioTracks().length && localRaw !== CFG.raw) local.getAudioTracks().forEach(t => { t.stop(); local.removeTrack(t); });
   if (!local.getAudioTracks().length) {
     try {
@@ -326,6 +327,11 @@ function addTile(key, stream, label, mute, avatar, pid) {
   const nm = document.createElement('div'); nm.className = 'nm';
   const mic = document.createElement('span'); nm.append(mic, label);
   el.append(av, v, nm); $('#grid').append(el);
+  if (cur && cur.owner === me && pid && pid !== 'me' && pid !== 'me-screen') {
+    const kb = document.createElement('button'); kb.className = 'kick'; kb.textContent = '✖ اخراج';
+    kb.onclick = () => { if (confirm('«' + (peers[pid] ? peers[pid].name : '') + '» از روم اخراج شود؟')) socket.emit('kick', pid); };
+    el.append(kb);
+  }
   tiles[key] = { el, v, stream, av, pid, mic };
   stream.onremovetrack = stream.onaddtrack = () => updTile(key);
   v.onplaying = () => updTile(key);
@@ -541,13 +547,11 @@ const lab = () => { $('#svv').textContent = CFG.voice + '٪'; $('#sav').textCont
 document.querySelectorAll('.gearbtn').forEach(b => b.onclick = () => { lab(); $('#set').hidden = false; buildPV(); });
 $('#sc').onclick = () => $('#set').hidden = true;
 $('#set').onclick = e => { if (e.target.id === 'set') e.target.hidden = true; };
-$('#sv').value = CFG.voice; $('#sa').value = CFG.amb; $('#sb').checked = CFG.bg; $('#sr').checked = CFG.raw; lab();
+$('#sv').value = CFG.voice; $('#sa').value = CFG.amb; $('#sr').checked = CFG.raw; lab();
 $('#sv').oninput = () => { CFG.voice = +$('#sv').value; saveCfg(); applyVol(); lab(); };
 $('#sa').oninput = () => { CFG.amb = +$('#sa').value; saveCfg(); lab(); };
 $('#sa').onchange = () => sfx('msg');
 $('#sr').onchange = () => { CFG.raw = $('#sr').checked; saveCfg(); };
-$('#sb').onchange = () => { CFG.bg = $('#sb').checked; saveCfg(); document.body.classList.toggle('noBg', !CFG.bg); };
-document.body.classList.toggle('noBg', !CFG.bg);
 $('#ask').onchange = () => { cur.ask = $('#ask').checked; socket.emit('ask', { id: cur.id, on: cur.ask }); };
 let mp; addEventListener('mousemove', e => {
   if (mp) return;
@@ -587,6 +591,13 @@ function showKnock() {
 }
 const kans = ok => { socket.emit('knock-reply', { rid: knockCur.rid, sid: knockCur.sid, ok }); knockCur = null; $('#kn').hidden = true; showKnock(); };
 $('#ky').onclick = () => kans(true); $('#kno').onclick = () => kans(false);
+
+let found = null, ft;
+async function findRoom() {
+  const q = $('#q').value.trim(); if (!q) { found = null; return draw(); }
+  const r = await emit('find', q);
+  if ($('#q').value.trim() === q) { found = r.room; draw(); }
+}
 
 /* ---------- Boot ---------- */
 if (token && me) start(); else { show('auth'); setMode('login'); }
