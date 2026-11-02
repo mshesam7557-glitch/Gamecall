@@ -179,10 +179,52 @@ select{-webkit-appearance:none;appearance:none;background:var(--bg) url("data:im
 .donate{background:linear-gradient(135deg,#ff6b9a,#ff8f6b)!important;color:#fff}
 @media(max-width:560px){#set.modal>.card.sheet{animation:slideUp .4s cubic-bezier(.2,.9,.3,1);border-radius:24px 24px 0 0;max-width:none}}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+.land{max-width:1040px;margin:0 auto;display:grid;gap:56px}
+.lnav{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.brand{display:flex;gap:10px;align-items:center;font-weight:800;font-size:20px}
+.logo.sm{width:38px;height:38px;font-size:19px;border-radius:12px;animation:none;box-shadow:none}
+.hero{text-align:center;display:grid;gap:22px;justify-items:center;padding:24px 0 10px}
+.hero h1{font-size:clamp(30px,6vw,54px);line-height:1.35;max-width:780px}
+.hero p{max-width:640px;color:var(--mut);font-size:17px;line-height:2;margin:0}
+.big{padding:15px 30px;font-size:16px}
+.cta{justify-content:center;flex-wrap:wrap}
+.stats{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.stats span{background:#ffffff12;border-radius:30px;padding:6px 14px;font-size:13px;color:var(--ac2)}
+.sec-t{text-align:center;font-size:24px;margin:0 0 22px}
+.feats{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px}
+.fc{background:var(--panel);border:1px solid #ffffff12;border-radius:18px;padding:20px;display:grid;gap:8px;align-content:start;transition:transform .2s,border-color .2s}
+.fc:hover{transform:translateY(-4px);border-color:var(--ac)}
+.fc i{font-style:normal;font-size:28px}.fc h3{margin:0;font-size:16px}.fc p{margin:0;color:var(--mut);font-size:13.5px;line-height:1.9}
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;text-align:center}
+.st{padding:18px}.st h3{margin:0 0 6px}.st p{margin:0}
+.num{width:46px;height:46px;border-radius:50%;margin:0 auto 12px;display:grid;place-items:center;font-weight:800;font-size:18px;background:linear-gradient(135deg,#8a7bff,#5a49e8);box-shadow:0 8px 20px #6a5cf055}
+details{background:var(--panel);border:1px solid #ffffff12;border-radius:14px;padding:14px 18px;margin-bottom:10px}
+summary{cursor:pointer;font-weight:700}
+details p{color:var(--mut);line-height:1.9;margin:10px 0 0}
+.lfoot{text-align:center;color:var(--mut);font-size:13px;padding:10px 0 30px;display:grid;gap:12px;justify-items:center}
 </style>
 </head>
 <body>
 
+<div id="home" class="screen">
+  <div class="land">
+    <nav class="lnav"><div class="brand"><span class="logo sm">🎧</span>گیم‌کال</div><div class="pill"><button class="ghost" id="hl">ورود</button><button id="hr">ساخت حساب</button></div></nav>
+    <header class="hero">
+      <h1>با دوستانت وسط بازی، زنده حرف بزن</h1>
+      <p>گیم‌کال یک فضای رایگان برای مکالمه‌ی صوتی، تصویری و اشتراک صفحه است. یک روم بساز، اسمش را به دوستانت بگو و همان لحظه صحبت کنید. بدون ایمیل و بدون شماره‌ی تلفن.</p>
+      <div class="pill cta"><button class="big" id="hr2">شروع کن، رایگان</button><button class="ghost big" id="hl2">قبلاً حساب ساخته‌ام</button></div>
+      <div class="stats"><span>🎙️ صدای زنده</span><span>🖥️ اشتراک صفحه تا ۱۰۸۰p</span><span>👥 تا ۱۰ نفر در هر روم</span></div>
+    </header>
+    <section><h2 class="sec-t">امکانات</h2><div class="feats"><div class="fc"><i>🎙️</i><h3>صدا و تصویر زنده</h3><p>مکالمه‌ی مستقیم بین خود کاربرها با تأخیر کم؛ مناسب صحبت کردن وسط بازی.</p></div><div class="fc"><i>🖥️</i><h3>اشتراک صفحه</h3><p>صفحه یا بازی‌ات را از ۷۲۰p تا ۱۰۸۰p و تا ۶۰ فریم برای دوستانت نشان بده.</p></div><div class="fc"><i>🔒</i><h3>روم رمزدار و شخصی</h3><p>رمز اختیاری است. روم شخصی در لیست دیده نمی‌شود و فقط با جستجوی دقیق اسمش پیدا می‌شود.</p></div><div class="fc"><i>🔔</i><h3>ورود با اجازه</h3><p>صاحب روم تصمیم می‌گیرد چه کسی وارد شود و درخواست‌ها را با یک صدای هشدار می‌بیند.</p></div><div class="fc"><i>💬</i><h3>چت داخل روم</h3><p>پیام‌ها با اسم و عکس پروفایل نمایش داده می‌شوند و بعد از ۱۵ دقیقه خودکار پاک می‌شوند.</p></div><div class="fc"><i>🎚️</i><h3>کنترل کامل صدا</h3><p>صدای هر نفر را جدا کم و زیاد کن، تا ۴۰۰٪ تقویتش کن و صدای افکت‌ها را تنظیم کن.</p></div><div class="fc"><i>🛡️</i><h3>مدیریت روم</h3><p>ظرفیت ۲ تا ۱۰ نفر، اخراج افراد و حذف روم هر زمان که بخواهی.</p></div><div class="fc"><i>📱</i><h3>موبایل و کامپیوتر</h3><p>بدون نصب، داخل مرورگر کار می‌کند و روی گوشی می‌توانی آن را به صفحه‌ی اصلی اضافه کنی.</p></div><div class="fc"><i>🕶️</i><h3>حداقل اطلاعات</h3><p>فقط یک نام کاربری و رمز. بدون ایمیل و بدون شماره‌ی تلفن.</p></div></div></section>
+    <section><h2 class="sec-t">چطور کار می‌کند؟</h2><div class="steps">
+      <div class="st"><div class="num">۱</div><h3>حساب بساز</h3><p class="mut">فقط نام کاربری و رمز، در چند ثانیه.</p></div>
+      <div class="st"><div class="num">۲</div><h3>روم بساز</h3><p class="mut">اسم، ظرفیت و رمز اختیاری را انتخاب کن.</p></div>
+      <div class="st"><div class="num">۳</div><h3>دوستانت را دعوت کن</h3><p class="mut">اسم روم را بفرست تا با جستجو وارد شوند.</p></div>
+    </div></section>
+    <section><h2 class="sec-t">سؤال‌های رایج</h2><details><summary>رایگان است؟</summary><p>بله، استفاده از گیم‌کال رایگان است. اگر دوست داشتی می‌توانی از طریق دکمه‌ی حمایت مالی از آن پشتیبانی کنی.</p></details><details><summary>باید برنامه نصب کنم؟</summary><p>نه. گیم‌کال داخل مرورگر باز می‌شود. روی گوشی هم می‌توانی از منوی مرورگر «Add to Home screen» را بزنی تا مثل یک برنامه باز شود.</p></details><details><summary>چند نفر می‌توانند در یک روم باشند؟</summary><p>صاحب روم ظرفیت را از ۲ تا ۱۰ نفر انتخاب می‌کند. چون ارتباط‌ها مستقیم بین کاربرهاست، برای رومِ ۸ تا ۱۰ نفره بهتر است دوربین‌ها خاموش باشند.</p></details><details><summary>اطلاعات من چطور نگه‌داری می‌شود؟</summary><p>فقط نام کاربری، رمز (به‌صورت رمزنگاری‌شده) و عکس پروفایل اختیاری ذخیره می‌شود. پیام‌های چت بعد از ۱۵ دقیقه از سرور پاک می‌شوند.</p></details><details><summary>با کدام مرورگر کار می‌کند؟</summary><p>نسخه‌های جدید Chrome، Edge، Firefox و Safari. برای اشتراک صفحه، مرورگر کامپیوتر پیشنهاد می‌شود.</p></details></section>
+    <footer class="lfoot"><button class="big" id="hr3">همین حالا شروع کن</button><a class="btn donate" href="https://reymit.ir/ms_hesam_donate" target="_blank" rel="noopener">❤️ حمایت مالی</a><span>گیم‌کال، ساخته‌شده برای گیمرها</span></footer>
+  </div>
+</div>
 <div id="auth" class="screen center" hidden>
   <div class="card stack">
     <div class="logo">🎧</div><h1>گیم‌کال</h1>
@@ -193,6 +235,7 @@ select{-webkit-appearance:none;appearance:none;background:var(--bg) url("data:im
     <div id="am" class="msg"></div>
     <button id="go">ورود</button>
     <a class="lnk" id="sw">حساب ندارم</a>
+    <a class="lnk" id="back">→ بازگشت به صفحه‌ی اصلی</a>
   </div>
 </div>
 
@@ -278,7 +321,7 @@ let myAvatar = '', token = localStorage.gt || sessionStorage.gt, me = localStora
 
 let micState = {};
 const show = n => {
-  ['auth','lobby','room'].forEach(x => $('#'+x).hidden = x !== n);
+  ['home','auth','lobby','room'].forEach(x => $('#'+x).hidden = x !== n);
   document.body.classList.toggle('inroom', n === 'room'); $('#set').hidden = true;
   if (n !== 'room') $('#msgs').innerHTML = '';
 };
@@ -312,7 +355,7 @@ function logout() {
   localStorage.clear(); sessionStorage.clear(); token = me = null; myAvatar = '';
   if (cur) leaveLocal();
   if (socket) { socket.disconnect(); socket = null; }
-  $('#p').value = ''; show('auth'); setMode('login');
+  $('#p').value = ''; show('home'); setMode('login');
 }
 $('#out').onclick = logout;
 
@@ -698,8 +741,13 @@ async function findRoom() {
   if ($('#q').value.trim() === q) { found = r.room; draw(); }
 }
 
+const toAuth = m => { show('auth'); setMode(m); scrollTo(0, 0); };
+$('#hl').onclick = $('#hl2').onclick = () => toAuth('login');
+$('#hr').onclick = $('#hr2').onclick = $('#hr3').onclick = () => toAuth('register');
+$('#back').onclick = () => show('home');
+
 /* ---------- Boot ---------- */
-if (token && me) start(); else { show('auth'); setMode('login'); }
+if (token && me) { $('#home').hidden = true; start(); } else { show('home'); setMode('login'); }
 </script>
 </body>
 </html>
