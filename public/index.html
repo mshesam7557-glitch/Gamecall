@@ -208,6 +208,11 @@ button{color:var(--tx)}
 .btn:hover{filter:brightness(1.12);transform:translateY(-1px)}
 .btn:active{transform:scale(.96)}
 .donate:hover{box-shadow:0 6px 20px #ff6b9a55}
+.ch1{display:flex;justify-content:space-between;align-items:center}
+.ch1 .x{width:32px;height:32px;padding:0;border-radius:50%}
+.tile:fullscreen .fs{top:16px;right:16px;padding:10px 16px;font-size:20px;opacity:1}
+.tile:-webkit-full-screen .fs{top:16px;right:16px;padding:10px 16px;font-size:20px;opacity:1}
+@media(max-width:800px){#chat{bottom:var(--ctlh,80px);height:48dvh;border-radius:20px;border-bottom:1px solid var(--line);box-shadow:0 -6px 30px #000a}}
 </style>
 </head>
 <body>
@@ -272,7 +277,7 @@ button{color:var(--tx)}
     <div class="pill"><button class="ghost" id="rcopy">📋 کپی نام روم</button><button class="danger" id="del" hidden>حذف روم</button></div>
   </div>
   <div class="main"><div class="grid" id="grid"></div>
-  <aside id="chat"><div class="chead">چت روم<small>⚠️ پیام‌ها بعد از ۱۵ دقیقه خودکار پاک می‌شوند.</small></div><div id="msgs"></div><div class="cin"><input id="ci" placeholder="پیام..." maxlength="500"><button id="cs">ارسال</button></div></aside></div>
+  <aside id="chat"><div class="chead"><div class="ch1"><span>چت روم</span><button class="ghost x" id="cx" title="بستن چت">✕</button></div><small>⚠️ پیام‌ها بعد از ۱۵ دقیقه خودکار پاک می‌شوند.</small></div><div id="msgs"></div><div class="cin"><input id="ci" placeholder="پیام..." maxlength="500"><button id="cs">ارسال</button></div></aside></div>
   <div class="ctl">
     <button id="bm" class="on"><i>🎙️</i><span>میکروفون</span></button>
     <button id="bd"><i>🎧</i><span>گوش‌دادن</span></button>
@@ -438,7 +443,7 @@ async function join(r, pw) {
   if (res.error) return toast(res.error);
   cur = { id: r.id, owner: res.owner, ask: res.ask };
   $('#rt').textContent = res.name; $('#del').hidden = res.owner !== me;
-  show('room'); $('#grid').innerHTML = ''; tiles = {}; (res.msgs || []).forEach(addMsg); unread = 0; chBtn(); $('#chat').classList.toggle('hide', innerWidth <= 800);
+  show('room'); $('#grid').innerHTML = ''; tiles = {}; (res.msgs || []).forEach(addMsg); unread = 0; chBtn(); $('#chat').classList.toggle('hide', innerWidth <= 800); setCtlH();
   addTile('me-cam', local, me + ' (تو)', true, myAvatar, 'me');
   res.peers.forEach(p => { micState[p.id] = p.mic !== false; getPeer(p.id, p.name, p.avatar); });
   syncUI(); sendState();
@@ -462,7 +467,12 @@ function addTile(key, stream, label, mute, avatar, pid) {
   const mic = document.createElement('span'); nm.append(mic, label);
   el.append(av, v, nm); $('#grid').append(el);
   const fs = document.createElement('button'); fs.className = 'fs'; fs.textContent = '⛶'; fs.title = 'تمام‌صفحه';
-  fs.onclick = () => { if (el.requestFullscreen) el.requestFullscreen(); else if (v.webkitEnterFullscreen) v.webkitEnterFullscreen(); };
+  fs.onclick = () => {
+    const fe = document.fullscreenElement || document.webkitFullscreenElement;
+    if (fe) { (document.exitFullscreen || document.webkitExitFullscreen).call(document); }
+    else if (el.requestFullscreen) el.requestFullscreen();
+    else if (v.webkitEnterFullscreen) v.webkitEnterFullscreen();
+  };
   el.append(fs); el.ondblclick = fs.onclick;
   if (cur && cur.owner === me && pid && pid !== 'me' && pid !== 'me-screen') {
     const kb = document.createElement('button'); kb.className = 'kick'; kb.textContent = '✖ اخراج';
@@ -649,6 +659,10 @@ function sfx(n) {
 document.addEventListener('click', e => { if (e.target.closest('button,a.btn')) sfx('click'); });
 const paintRange = r => r.style.setProperty('--p', (r.value - r.min) / (r.max - r.min) * 100 + '%');
 document.addEventListener('input', e => { if (e.target.type === 'range') paintRange(e.target); });
+const setCtlH = () => document.documentElement.style.setProperty('--ctlh', ($('.ctl').offsetHeight + 22) + 'px');
+addEventListener('resize', setCtlH);
+const fsSync = () => document.querySelectorAll('.fs').forEach(b => b.textContent = (document.fullscreenElement || document.webkitFullscreenElement) ? '✕' : '⛶');
+document.addEventListener('fullscreenchange', fsSync); document.addEventListener('webkitfullscreenchange', fsSync);
 let deaf = false, unread = 0;
 const SQ = [{ width: 1280, height: 720, frameRate: 30 }, { width: 1920, height: 1080, frameRate: 30 }, { width: 1920, height: 1080, frameRate: 60 }];
 const setBtn = (id, i, t) => { $(id).innerHTML = '<i>' + i + '</i><span>' + t + '</span>'; };
@@ -727,7 +741,8 @@ function addMsg(m) {
 const sendChat = () => { const v = $('#ci').value.trim(); if (v) { socket.emit('chat', v); $('#ci').value = ''; } };
 $('#cs').onclick = sendChat;
 $('#ci').addEventListener('keydown', e => { if (e.key === 'Enter') sendChat(); });
-$('#bch').onclick = () => { $('#chat').classList.toggle('hide'); unread = 0; chBtn(); };
+$('#bch').onclick = () => { $('#chat').classList.toggle('hide'); unread = 0; chBtn(); setCtlH(); };
+$('#cx').onclick = () => $('#chat').classList.add('hide');
 
 /* join with permission */
 let knockQ = [], knockCur = null;
